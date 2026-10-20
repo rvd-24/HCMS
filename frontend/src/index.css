@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+  }
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238a93a3' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.75rem center;
+    background-repeat: no-repeat;
+    background-size: 1.15em 1.15em;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cfd6df transparent;
+  }
+}
+
+@layer components {
+  /* Soft mesh gradient behind the whole app (fixed, so cards float over it). */
+  .app-backdrop {
+    background:
+      radial-gradient(40rem 30rem at 0% 0%, rgba(162, 230, 196, 0.45), transparent 60%),
+      radial-gradient(36rem 28rem at 100% 10%, rgba(196, 218, 240, 0.55), transparent 60%),
+      radial-gradient(40rem 30rem at 80% 100%, rgba(226, 245, 143, 0.28), transparent 60%),
+      radial-gradient(30rem 30rem at 10% 90%, rgba(207, 222, 236, 0.6), transparent 60%),
+      #eef2f6;
+  }
+  .glass {
+    @apply border border-white/70 bg-white/70 backdrop-blur-xl;
+  }
+  .glass-dark {
+    @apply border border-white/15 bg-white/10 backdrop-blur-xl;
+  }
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-600 via-brand-400 to-lime-400 bg-clip-text text-transparent;
+    background-size: 200% 200%;
+    animation: gradient-x 8s ease infinite;
+  }
+  .num {
+    @apply font-display tabular-nums tracking-tight;
+  }
+  .lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-float;
+  }
+  .dot-grid {
+    background-image: radial-gradient(rgba(18, 26, 38, 0.09) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  .table-base {
+    @apply w-full text-left text-sm;
+  }
+  .table-base th {
+    @apply whitespace-nowrap px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-ink-faint first:pl-6 last:pr-6;
+  }
+  .table-base thead tr {
+    @apply bg-canvas/60;
+  }
+  .table-base td {
+    @apply border-t border-line/70 px-4 py-3.5 align-middle first:pl-6 last:pr-6;
+  }
+  .table-base tbody tr {
+    @apply transition-colors hover:bg-brand-50/50;
+  }
+
+  /* Scroll reveal: <Reveal> toggles .is-visible. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition:
+      opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+      transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--delay, 0ms);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Children fade up one after another; set --i on each child or rely on nth-child. */
+  .stagger > * {
+    animation: fade-up 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.08s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.14s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.2s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.26s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.32s; }
+  .stagger > *:nth-child(7) { animation-delay: 0.38s; }
+  .stagger > *:nth-child(8) { animation-delay: 0.44s; }
+  .stagger > *:nth-child(n + 9) { animation-delay: 0.5s; }
+
+  .ecg-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: ecg 2.8s linear infinite;
+  }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ecg {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  .ecg-path {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* 3D anatomy overlay labels (positioned by the scene each frame) */
+.tooth-label {
+  @apply absolute left-0 top-0 flex h-6 min-w-6 items-center justify-center rounded-full bg-white/85 px-1.5 text-[10px] font-bold text-ink-soft shadow-card ring-1 ring-ink/5 backdrop-blur transition-opacity duration-300;
+  will-change: transform;
+}
+.tooth-label[data-state="marked"] {
+  @apply bg-coral-500 text-white ring-0;
+}
+.tooth-label[data-state="selected"] {
+  @apply bg-brand-500 text-white ring-4 ring-brand-100;
+}
+.hotspot-label {
+  @apply absolute left-0 top-0 whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-pop transition-opacity duration-300;
+}
+/* Callout sitting on the dark scan-room panel */
+.dark-glass .text-ink {
+  @apply text-white;
+}
+.dark-glass .text-ink-soft {
+  @apply text-white/75;
+}
+.dark-glass .text-ink-faint {
+  @apply text-white/55;
+}
+/* Patient stage callout laid out as one row under the model on narrower stages */
+.callout-bar,
+.callout-bar > .animate-fade-in {
+  @apply flex flex-wrap items-center gap-x-5 gap-y-1;
+}
+.callout-bar p {
+  @apply mt-0;
+}
+.callout-bar .font-display {
+  @apply text-4xl;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

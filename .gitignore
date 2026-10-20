@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv
+
+# Secrets — never commit
+.env
+secrets/
+credentials.json
+token.json
+
+# Patient data (PII): database, uploads, scanned prescriptions
+data/
+prescriptions/
+prescriptions.zip
+
+# Unrelated bulk download output (tools/download_blobs.py)
+blob_download/
+tools/blob_download/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+*.log
