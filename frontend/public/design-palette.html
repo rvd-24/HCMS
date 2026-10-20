@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Prescript Theme Palette</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Urbanist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* Tokens mirror frontend/tailwind.config.js (Tailwind 3.4). Status tones use Tailwind's default palette. */
+  :root {
+    --brand-50:#ebfaf2; --brand-100:#cff3e0; --brand-200:#a2e6c4; --brand-300:#6dd3a3; --brand-400:#39bb80;
+    --brand-500:#1ea468; --brand-600:#148653; --brand-700:#136a45; --brand-800:#13553a; --brand-900:#0f3f2c; --brand-950:#082519;
+    --lime-200:#eefabf; --lime-300:#e2f58f; --lime-400:#d2ec5c;
+    --coral-50:#fff1ef; --coral-100:#ffdfda; --coral-400:#f8796b; --coral-500:#ef5544; --coral-600:#d63c2c;
+    --ink:#121a26; --ink-soft:#566072; --ink-faint:#8a93a3; --line:#e6eaf0; --canvas:#eef2f6; --white:#ffffff;
+    --shadow-card:0 1px 2px rgba(16,24,40,0.03), 0 8px 24px -12px rgba(16,24,40,0.10);
+    --shadow-float:0 2px 6px rgba(16,24,40,0.04), 0 24px 48px -20px rgba(16,24,40,0.22);
+    --shadow-pop:0 18px 48px -12px rgba(16,24,40,0.28);
+    --shadow-glow:0 10px 30px -8px rgba(30,164,104,0.55);
+    --shadow-glow-sm:0 6px 16px -6px rgba(30,164,104,0.6);
+    --font-sans:"Plus Jakarta Sans", Inter, system-ui, sans-serif;
+    --font-display:"Urbanist", "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; font-family: var(--font-sans); color: var(--ink); font-size: 14px; line-height: 1.55;
+    background:
+      radial-gradient(40rem 30rem at 0% 0%, rgba(162,230,196,0.45), transparent 60%),
+      radial-gradient(36rem 28rem at 100% 10%, rgba(196,218,240,0.55), transparent 60%),
+      radial-gradient(40rem 30rem at 80% 100%, rgba(226,245,143,0.28), transparent 60%),
+      radial-gradient(30rem 30rem at 10% 90%, rgba(207,222,236,0.6), transparent 60%),
+      var(--canvas);
+    background-attachment: fixed;
+  }
+  h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; margin: 0; }
+  code, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 16px 80px; }
+
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  header h1 { font-size: 34px; font-weight: 700; }
+  .lede { color: var(--ink-soft); max-width: 720px; margin: 6px 0 0; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.8); color: var(--ink-soft); font-size: 12px; }
+
+  nav { position: sticky; top: 0; z-index: 5; margin: 28px -16px 0; padding: 10px 16px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+        background: rgba(238,242,246,.82); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(230,234,240,.8); }
+  nav a { white-space: nowrap; text-decoration: none; color: var(--ink-soft); font-weight: 600; font-size: 13px; padding: 6px 12px; border-radius: 999px; }
+  nav a:hover { background: rgba(18,26,38,.05); color: var(--ink); }
+
+  section { margin-top: 44px; scroll-margin-top: 70px; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .sec-head h2 { font-size: 24px; font-weight: 700; }
+  .sec-head p { margin: 0; color: var(--ink-soft); font-size: 13px; }
+  .card { background: var(--white); border: 1px solid rgba(255,255,255,.8); border-radius: 26px; box-shadow: var(--shadow-card); padding: 22px; }
+  .card + .card { margin-top: 14px; }
+  .card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .card .sub { color: var(--ink-soft); font-size: 13px; margin: 0 0 16px; }
+
+  /* Swatches */
+  .scale { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); border-radius: 18px; overflow: hidden; }
+  .scale.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .scale.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sw { all: unset; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; min-height: 120px; padding: 10px; font-size: 11px; position: relative; transition: transform .15s; }
+  .sw:hover { transform: translateY(-3px); }
+  .sw:focus-visible { outline: 3px solid var(--brand-200); outline-offset: -3px; }
+  .sw b { font-weight: 700; font-size: 12px; }
+  .sw .hex { opacity: .85; font-family: ui-monospace, Menlo, Consolas, monospace; text-transform: uppercase; }
+  .sw .tag { position: absolute; top: 8px; left: 8px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(255,255,255,.85); color: var(--ink); }
+  .sw.dark-text { color: var(--ink); } .sw.light-text { color: #fff; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .tile { all: unset; cursor: pointer; display: block; border-radius: 18px; border: 1px solid var(--line); overflow: hidden; background: #fff; transition: transform .15s, box-shadow .15s; }
+  .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-float); }
+  .tile:focus-visible { outline: 3px solid var(--brand-200); }
+  .tile .chipc { height: 84px; display: flex; align-items: flex-end; padding: 10px; }
+  .tile .info { padding: 10px 12px 12px; }
+  .tile .info b { display: block; font-size: 13px; }
+  .tile .info span { display: block; color: var(--ink-soft); font-size: 12px; }
+  .tile .info .mono { color: var(--ink); text-transform: uppercase; }
+
+  /* Badges — mirrors Badge in components/ui/primitives.tsx */
+  .badges { display: flex; flex-wrap: wrap; gap: 10px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 600; box-shadow: inset 0 0 0 1px var(--r); background: var(--b); color: var(--t); }
+  .badge.dot::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+  .t-slate  { --b:#f1f5f9; --t:#334155; --r:rgba(226,232,240,.7); }
+  .t-green  { --b:#ecfdf5; --t:#047857; --r:rgba(167,243,208,.7); }
+  .t-amber  { --b:#fffbeb; --t:#b45309; --r:rgba(253,230,138,.7); }
+  .t-violet { --b:#f5f3ff; --t:#6d28d9; --r:rgba(221,214,254,.7); }
+  .t-teal   { --b:var(--brand-50); --t:var(--brand-700); --r:rgba(162,230,196,.7); }
+  .t-red    { --b:var(--coral-50); --t:var(--coral-600); --r:var(--coral-100); }
+  .t-gray   { --b:#f3f4f6; --t:#6b7280; --r:rgba(229,231,235,.7); }
+  .t-blue   { --b:#f0f9ff; --t:#0369a1; --r:rgba(186,230,253,.7); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); padding: 10px 12px; background: rgba(238,242,246,.6); white-space: nowrap; }
+  td { padding: 11px 12px; border-top: 1px solid rgba(230,234,240,.7); vertical-align: middle; }
+  .tbl { overflow-x: auto; border-radius: 16px; border: 1px solid var(--line); }
+  .dotc { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 8px; box-shadow: inset 0 0 0 1px rgba(18,26,38,.08); }
+
+  /* Data viz */
+  .legend { display: flex; flex-wrap: wrap; gap: 14px 22px; margin-top: 14px; font-size: 12px; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 150px; padding-top: 6px; border-bottom: 1px solid var(--line); }
+  .bars .col { flex: 1; display: flex; flex-direction: column-reverse; gap: 2px; }
+  .bars .col div { border-radius: 4px; }
+  .teeth { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tooth { width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; }
+
+  /* Avatars */
+  .avatars { display: flex; flex-wrap: wrap; gap: 14px; }
+  .av { width: 52px; height: 52px; border-radius: 999px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; color: #fff; box-shadow: 0 0 0 2px #fff; }
+
+  /* Type */
+  .type-row { display: grid; grid-template-columns: 170px 1fr; gap: 16px; align-items: baseline; padding: 14px 0; border-top: 1px solid var(--line); }
+  .type-row:first-of-type { border-top: 0; }
+  .type-row .lbl { color: var(--ink-soft); font-size: 12px; }
+  .type-row .lbl b { display: block; color: var(--ink); font-size: 13px; }
+
+  /* Components — mirror components/ui/primitives.tsx */
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; font-weight: 600; font-size: 14px; padding: 10px 18px; transition: all .2s; }
+  .btn:focus-visible { box-shadow: 0 0 0 4px var(--brand-200); }
+  .btn-primary { background: linear-gradient(to bottom, var(--brand-400), var(--brand-500)); color: #fff; box-shadow: var(--shadow-glow-sm); }
+  .btn-primary:hover { box-shadow: var(--shadow-glow); transform: translateY(-1px); }
+  .btn-secondary { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+  .btn-secondary:hover { background: var(--canvas); }
+  .btn-ghost { color: var(--ink-soft); } .btn-ghost:hover { background: rgba(18,26,38,.05); color: var(--ink); }
+  .btn-danger { background: #fff; color: var(--coral-600); box-shadow: inset 0 0 0 1px var(--coral-100); } .btn-danger:hover { background: var(--coral-50); }
+  .btn-soft { background: var(--brand-50); color: var(--brand-700); } .btn-soft:hover { background: var(--brand-100); }
+  .btn-dark { background: var(--ink); color: #fff; box-shadow: 0 10px 24px -10px rgba(18,26,38,.6); } .btn-dark:hover { transform: translateY(-1px); }
+  .btn-name { display: block; text-align: center; margin-top: 6px; font-size: 11px; color: var(--ink-soft); }
+  .input { width: 100%; max-width: 320px; border: 1px solid var(--line); background: #fff; border-radius: 14px; padding: 10px 14px; font: inherit; color: var(--ink); }
+  .input::placeholder { color: var(--ink-faint); }
+  .input:focus { outline: none; border-color: var(--brand-400); box-shadow: 0 0 0 4px var(--brand-100); }
+  .toggle { width: 44px; height: 24px; border-radius: 999px; position: relative; display: inline-block; }
+  .toggle::after { content: ""; position: absolute; top: 2px; width: 20px; height: 20px; border-radius: 999px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .toggle.on { background: var(--brand-500); box-shadow: var(--shadow-glow-sm); } .toggle.on::after { left: 22px; }
+  .toggle.off { background: #d1d5db; } .toggle.off::after { left: 2px; }
+  .alert { border: 1px solid; border-radius: 16px; padding: 12px 14px; font-size: 13px; }
+  .a-amber { background: rgba(255,251,235,.8); color: #92400e; border-color: rgba(253,230,138,.8); }
+  .a-red { background: var(--coral-50); color: var(--coral-600); border-color: var(--coral-100); }
+  .a-brand { background: rgba(235,250,242,.8); color: var(--brand-800); border-color: rgba(162,230,196,.8); }
+  .a-slate { background: #f8fafc; color: #334155; border-color: #e2e8f0; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .seg { display: inline-grid; grid-template-columns: repeat(3, auto); background: rgba(18,26,38,.05); border-radius: 999px; padding: 4px; }
+  .seg span { padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+  .seg span.on { background: #fff; color: var(--ink); box-shadow: var(--shadow-card); }
+
+  .fx { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }
+  .fx .box { height: 96px; border-radius: 18px; background: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: var(--ink-soft); border: 1px solid rgba(255,255,255,.8); }
+  .radii .box { border: 1px solid var(--line); background: var(--brand-50); color: var(--brand-700); }
+  .surface { height: 120px; border-radius: 18px; display: grid; place-items: center; font-weight: 600; font-size: 13px; }
+
+  /* Contrast */
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .pass { background: #ecfdf5; color: #047857; } .warn { background: #fffbeb; color: #b45309; } .fail { background: var(--coral-50); color: var(--coral-600); }
+  .sample { display: inline-block; padding: 4px 10px; border-radius: 8px; font-weight: 600; font-size: 13px; }
+  .notes { margin: 0; padding-left: 18px; } .notes li { margin: 8px 0; } .notes li::marker { color: var(--brand-500); }
+
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 600; box-shadow: var(--shadow-pop); transition: all .25s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 760px) {
+    header h1 { font-size: 28px; }
+    .scale { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .scale.five { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sw { min-height: 92px; }
+    .grid2 { grid-template-columns: 1fr; }
+    .type-row { grid-template-columns: 1fr; gap: 4px; }
+    .card { padding: 16px; border-radius: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 32 32" width="44" height="44" aria-hidden="true">
+      <rect x="12" y="1.5" width="8" height="13.5" rx="4" fill="#1ea468" />
+      <rect x="17" y="12" width="13.5" height="8" rx="4" fill="#39bb80" />
+      <rect x="12" y="17" width="8" height="13.5" rx="4" fill="#148653" />
+      <rect x="1.5" y="12" width="13.5" height="8" rx="4" fill="#6dd3a3" />
+      <circle cx="16" cy="16" r="2.6" fill="#fff" />
+    </svg>
+    <h1>Prescript theme palette</h1>
+  </header>
+  <p class="lede">Every colour, type style and surface the clinic app uses today, taken from the frontend code. Click any swatch to copy its hex. The contrast check and open questions at the end are what we'd most like a designer's eye on.</p>
+  <div class="meta">
+    <span class="chip">Source: <code>frontend/tailwind.config.js</code>, <code>src/index.css</code>, <code>components/ui/primitives.tsx</code></span>
+    <span class="chip">Tailwind 3.4</span>
+    <span class="chip">Light mode only — the app has no dark theme yet</span>
+    <span class="chip">Snapshot: 20 Oct 2026</span>
+  </div>
+
+  <nav aria-label="Sections">
+    <a href="#brand">Brand</a><a href="#accents">Accents</a><a href="#neutrals">Neutrals</a><a href="#status">Status</a>
+    <a href="#dataviz">Charts</a><a href="#avatars">Avatars</a><a href="#type">Type</a><a href="#components">Components</a>
+    <a href="#effects">Surfaces</a><a href="#contrast">Contrast</a><a href="#questions">Questions</a>
+  </nav>
+
+  <section id="brand">
+    <div class="sec-head"><h2>Brand green</h2><p>Token <code>brand-*</code>. 500 is the primary; 400→500 gradient fills primary buttons.</p></div>
+    <div class="card">
+      <div class="scale" data-scale="brand"></div>
+    </div>
+  </section>
+
+  <section id="accents">
+    <div class="sec-head"><h2>Accents</h2><p>Lime for highlights and the landing gradient; coral for danger, cancellations and marked teeth.</p></div>
+    <div class="card">
+      <h3>Lime</h3><p class="sub">Used for the text gradient (brand-600 → brand-400 → lime-400), avatar tints and the light logo.</p>
+      <div class="scale three" data-scale="lime"></div>
+    </div>
+    <div class="card">
+      <h3>Coral</h3><p class="sub">Danger button, red badge, error alerts, marked tooth labels.</p>
+      <div class="scale five" data-scale="coral"></div>
+    </div>
+  </section>
+
+  <section id="neutrals">
+    <div class="sec-head"><h2>Neutrals</h2><p>Text is <code>ink</code> in three strengths; surfaces are white cards on <code>canvas</code>.</p></div>
+    <div class="card"><div class="tiles" data-tiles="neutrals"></div></div>
+  </section>
+
+  <section id="status">
+    <div class="sec-head"><h2>Status badges</h2><p>Pill badges: tinted background, darker text, 70% ring. Tones come from Tailwind's default palette except teal and red.</p></div>
+    <div class="card">
+      <h3>Appointment status</h3><p class="sub">Shown with a leading dot.</p>
+      <div class="badges">
+        <span class="badge dot t-slate">Scheduled</span>
+        <span class="badge dot t-green">Confirmed</span>
+        <span class="badge dot t-amber">Checked in</span>
+        <span class="badge dot t-violet">In consultation</span>
+        <span class="badge dot t-teal">Completed</span>
+        <span class="badge dot t-red">Cancelled</span>
+        <span class="badge dot t-gray">No-show</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Doctor availability</h3><p class="sub">No dot.</p>
+      <div class="badges">
+        <span class="badge t-green">Available</span>
+        <span class="badge t-amber">In session</span>
+        <span class="badge t-red">Off</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Tone reference</h3><p class="sub">All eight badge tones defined in code (<code>blue</code> is defined but no status uses it).</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Tone</th><th>Badge</th><th>Background</th><th>Text</th><th>Ring</th></tr></thead>
+        <tbody>
+          <tr><td>slate</td><td><span class="badge t-slate">Sample</span></td><td><code>slate-100 #F1F5F9</code></td><td><code>slate-700 #334155</code></td><td><code>slate-200 /70</code></td></tr>
+          <tr><td>green</td><td><span class="badge t-green">Sample</span></td><td><code>emerald-50 #ECFDF5</code></td><td><code>emerald-700 #047857</code></td><td><code>emerald-200 /70</code></td></tr>
+          <tr><td>teal</td><td><span class="badge t-teal">Sample</span></td><td><code>brand-50 #EBFAF2</code></td><td><code>brand-700 #136A45</code></td><td><code>brand-200 /70</code></td></tr>
+          <tr><td>amber</td><td><span class="badge t-amber">Sample</span></td><td><code>amber-50 #FFFBEB</code></td><td><code>amber-700 #B45309</code></td><td><code>amber-200 /70</code></td></tr>
+          <tr><td>red</td><td><span class="badge t-red">Sample</span></td><td><code>coral-50 #FFF1EF</code></td><td><code>coral-600 #D63C2C</code></td><td><code>coral-100</code></td></tr>
+          <tr><td>violet</td><td><span class="badge t-violet">Sample</span></td><td><code>violet-50 #F5F3FF</code></td><td><code>violet-700 #6D28D9</code></td><td><code>violet-200 /70</code></td></tr>
+          <tr><td>gray</td><td><span class="badge t-gray">Sample</span></td><td><code>gray-100 #F3F4F6</code></td><td><code>gray-500 #6B7280</code></td><td><code>gray-200 /70</code></td></tr>
+          <tr><td>blue</td><td><span class="badge t-blue">Sample</span></td><td><code>sky-50 #F0F9FF</code></td><td><code>sky-700 #0369A1</code></td><td><code>sky-200 /70</code></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="dataviz">
+    <div class="sec-head"><h2>Chart &amp; finding colours</h2><p>Hard-coded hex values, not Tailwind tokens.</p></div>
+    <div class="card">
+      <h3>Appointment trend</h3><p class="sub">Dashboard stacked bars — <code>components/viz.tsx</code>, <code>TrendChart.tsx</code>.</p>
+      <div class="bars" id="bars" aria-hidden="true"></div>
+      <div class="legend">
+        <span><i style="background:#4a6fd1"></i>Completed <code>#4A6FD1</code></span>
+        <span><i style="background:#2e9e78"></i>Booked, not yet seen <code>#2E9E78</code></span>
+        <span><i style="background:#c4702a"></i>Cancelled / no-show <code>#C4702A</code></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Tooth findings</h3><p class="sub">Dental chart and 3D anatomy — <code>features/patients/insights/classify.ts</code>. Marked tooth labels use coral-500; selected uses brand-500.</p>
+      <div class="teeth">
+        <span class="tooth" style="background:#e0901b">16</span>
+        <span class="tooth" style="background:#e5484d">25</span>
+        <span class="tooth" style="background:#7c5cdb">37</span>
+        <span class="tooth" style="background:#1ea468">21</span>
+        <span class="tooth" style="background:#3b82f6">11</span>
+      </div>
+      <div class="legend">
+        <span><i style="background:#e0901b"></i>Decay <code>#E0901B</code></span>
+        <span><i style="background:#e5484d"></i>Root canal <code>#E5484D</code></span>
+        <span><i style="background:#7c5cdb"></i>Extraction / surgery <code>#7C5CDB</code></span>
+        <span><i style="background:#1ea468"></i>Restored <code>#1EA468</code></span>
+        <span><i style="background:#3b82f6"></i>Other finding <code>#3B82F6</code></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="avatars">
+    <div class="sec-head"><h2>Avatar gradients</h2><p>Picked from the person's name; bottom-right gradient, 2px white ring.</p></div>
+    <div class="card">
+      <div class="avatars">
+        <span class="av" style="background:linear-gradient(to bottom right,#6dd3a3,#1ea468)">AK</span>
+        <span class="av" style="background:linear-gradient(to bottom right,#7dd3fc,#818cf8)">RS</span>
+        <span class="av" style="background:linear-gradient(to bottom right,#c4b5fd,#e879f9)">MP</span>
+        <span class="av" style="background:linear-gradient(to bottom right,#fde68a,#fb923c)">NJ</span>
+        <span class="av" style="background:linear-gradient(to bottom right,#fda4af,#ef5544)">DT</span>
+        <span class="av" style="background:linear-gradient(to bottom right,#99f6e4,#06b6d4)">VB</span>
+        <span class="av" style="background:linear-gradient(to bottom right,#e2f58f,#39bb80);color:#0f3f2c">SG</span>
+      </div>
+      <p class="sub" style="margin:14px 0 0">brand-300→500 · sky-300→indigo-400 · violet-300→fuchsia-400 · amber-200→orange-400 · rose-300→coral-500 · teal-200→cyan-500 · lime-300→brand-400 (dark text)</p>
+    </div>
+  </section>
+
+  <section id="type">
+    <div class="sec-head"><h2>Typography</h2><p>Urbanist for headings and numbers; Plus Jakarta Sans for everything else.</p></div>
+    <div class="card">
+      <div class="type-row"><div class="lbl"><b>Display / H1</b>Urbanist 700 · 34px</div><div style="font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.01em">Good morning, Doctor</div></div>
+      <div class="type-row"><div class="lbl"><b>H2 / page title</b>Urbanist 700 · 24px</div><div style="font-family:var(--font-display);font-size:24px;font-weight:700">Appointments this week</div></div>
+      <div class="type-row"><div class="lbl"><b>Stat number</b>Urbanist 600 · tabular</div><div style="font-family:var(--font-display);font-size:40px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em">128</div></div>
+      <div class="type-row"><div class="lbl"><b>Wordmark</b>Urbanist 600 · 22px</div><div style="font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-.01em">Prescript</div></div>
+      <div class="type-row"><div class="lbl"><b>Body</b>Plus Jakarta Sans 400 · 14px · ink</div><div>Review the extracted case sheet before it is filed in the patient's history.</div></div>
+      <div class="type-row"><div class="lbl"><b>Secondary</b>400 · 13px · ink-soft</div><div style="color:var(--ink-soft);font-size:13px">Last visit 17 Oct · 5 doctors seen</div></div>
+      <div class="type-row"><div class="lbl"><b>Table header</b>600 · 11px · uppercase · ink-faint</div><div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)">Patient · Doctor · Time</div></div>
+      <div class="type-row"><div class="lbl"><b>Gradient text</b>brand-600 → brand-400 → lime-400</div><div style="font-family:var(--font-display);font-size:30px;font-weight:700;background:linear-gradient(to right,#148653,#39bb80,#d2ec5c);-webkit-background-clip:text;background-clip:text;color:transparent">From case sheet to follow-up</div></div>
+    </div>
+  </section>
+
+  <section id="components">
+    <div class="sec-head"><h2>Components</h2><p>Rebuilt here from the Tailwind classes in <code>primitives.tsx</code>; hover to see states.</p></div>
+    <div class="card">
+      <h3>Buttons</h3><p class="sub">Fully rounded, 600 weight. Focus ring is 4px brand-200.</p>
+      <div class="row">
+        <div><button class="btn btn-primary">Confirm visit</button><span class="btn-name">primary</span></div>
+        <div><button class="btn btn-secondary">Cancel</button><span class="btn-name">secondary</span></div>
+        <div><button class="btn btn-soft">Add page</button><span class="btn-name">soft</span></div>
+        <div><button class="btn btn-ghost">Skip</button><span class="btn-name">ghost</span></div>
+        <div><button class="btn btn-danger">Cancel appointment</button><span class="btn-name">danger</span></div>
+        <div><button class="btn btn-dark">Book follow-up</button><span class="btn-name">dark</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Form controls</h3><p class="sub">Inputs: 14px radius, line border, brand-400 border + brand-100 4px ring on focus.</p>
+      <div class="row" style="align-items:flex-start">
+        <input class="input" placeholder="Search patients, MRN, phone…" aria-label="Sample input" />
+        <span class="toggle on" title="Toggle on"></span><span class="toggle off" title="Toggle off"></span>
+        <span class="seg"><span class="on">Week</span><span>Day</span><span>List</span></span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Alerts</h3><p class="sub">Used for extraction warnings and system notices.</p>
+      <div class="grid2">
+        <div class="alert a-amber">Date on the sheet looks unclear — please check.</div>
+        <div class="alert a-red">Extraction failed. Fill in the form by hand.</div>
+        <div class="alert a-brand">Visit saved and follow-up booked.</div>
+        <div class="alert a-slate">Email is off — nothing will be sent.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="effects">
+    <div class="sec-head"><h2>Surfaces, shadows &amp; radii</h2><p>Cards are white, radius 26px, very soft shadow, floating on the gradient backdrop.</p></div>
+    <div class="card">
+      <h3>Shadows</h3><p class="sub" style="margin-bottom:20px">Tailwind <code>shadow-*</code> tokens.</p>
+      <div class="fx">
+        <div class="box" style="box-shadow:var(--shadow-card)">card</div>
+        <div class="box" style="box-shadow:var(--shadow-float)">float (hover lift)</div>
+        <div class="box" style="box-shadow:var(--shadow-pop)">pop (menus, modals)</div>
+        <div class="box" style="box-shadow:var(--shadow-glow);background:var(--brand-500);color:#fff">glow</div>
+        <div class="box" style="box-shadow:var(--shadow-glow-sm);background:var(--brand-500);color:#fff">glow-sm</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Radii</h3><p class="sub">Overrides of Tailwind's defaults.</p>
+      <div class="fx radii">
+        <div class="box" style="border-radius:14px">xl · 14px<br />inputs</div>
+        <div class="box" style="border-radius:18px">2xl · 18px</div>
+        <div class="box" style="border-radius:26px">3xl · 26px<br />cards</div>
+        <div class="box" style="border-radius:32px">4xl · 32px</div>
+        <div class="box" style="border-radius:999px">full<br />buttons, badges</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Backgrounds</h3><p class="sub">The whole app sits on a fixed mesh gradient (this page uses it too). Glass panels are white at 70% with a blur.</p>
+      <div class="grid2">
+        <div class="surface" style="background:radial-gradient(20rem 14rem at 0% 0%,rgba(162,230,196,.6),transparent 60%),radial-gradient(18rem 14rem at 100% 10%,rgba(196,218,240,.7),transparent 60%),radial-gradient(20rem 14rem at 80% 100%,rgba(226,245,143,.4),transparent 60%),#eef2f6;color:var(--ink-soft)">app backdrop</div>
+        <div class="surface" style="background:linear-gradient(135deg,#a2e6c4,#c4daf0);"><span style="padding:16px 22px;border-radius:18px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.7);backdrop-filter:blur(24px)">glass panel</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contrast">
+    <div class="sec-head"><h2>Contrast check</h2><p>WCAG 2.1. Text needs 4.5:1 (3:1 if ≥18.66px bold or ≥24px); chart marks need 3:1.</p></div>
+    <div class="card">
+      <div class="tbl"><table>
+        <thead><tr><th>Pair</th><th>Sample</th><th>Ratio</th><th>Result</th><th>Where it's used</th></tr></thead>
+        <tbody id="contrast-rows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="questions">
+    <div class="sec-head"><h2>Open questions for design</h2><p>Things the code does today that we'd like a decision on.</p></div>
+    <div class="card">
+      <ol class="notes">
+        <li><b>Primary button contrast.</b> White 14px text on the brand-400→500 gradient is 2.4–3.2:1. Darken the fill (brand-600 is 4.6:1) or keep the fresh green and accept it for large buttons only?</li>
+        <li><b><code>ink-faint</code> is used for real text</b> — table headers, placeholders, timestamps — at 3.1:1 on white and 2.8:1 on canvas. Darken the token, or limit it to decoration?</li>
+        <li><b>Two greens for status.</b> "Confirmed" uses Tailwind emerald while "Completed" uses brand green; they're close enough to confuse. Should one move to another hue?</li>
+        <li><b>Small coral and gray badges</b> (Cancelled, Off, No-show) sit just under 4.5:1 at 11px.</li>
+        <li><b>Colours outside the theme.</b> Chart series, tooth findings, avatars and the status tones use hex or Tailwind defaults rather than theme tokens. Bring them into the palette?</li>
+        <li><b>Decay orange</b> (#E0901B) is 2.6:1 on white — below the 3:1 for chart marks — and sits close to the "missed" chart orange.</li>
+        <li><b>Dark mode.</b> Not built. Wanted for clinic night shifts, or out of scope?</li>
+      </ol>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+  const SCALES = {
+    brand: [["50","#ebfaf2"],["100","#cff3e0"],["200","#a2e6c4"],["300","#6dd3a3"],["400","#39bb80"],["500","#1ea468","primary"],["600","#148653"],["700","#136a45"],["800","#13553a"],["900","#0f3f2c"],["950","#082519"]],
+    lime: [["200","#eefabf"],["300","#e2f58f"],["400","#d2ec5c"]],
+    coral: [["50","#fff1ef"],["100","#ffdfda"],["400","#f8796b"],["500","#ef5544","danger"],["600","#d63c2c"]],
+  };
+  const NEUTRALS = [
+    ["ink", "#121a26", "Headings, body text, dark button"],
+    ["ink-soft", "#566072", "Secondary text, ghost buttons"],
+    ["ink-faint", "#8a93a3", "Table headers, placeholders, meta"],
+    ["line", "#e6eaf0", "Borders, dividers, input outline"],
+    ["canvas", "#eef2f6", "App background, table header row"],
+    ["white", "#ffffff", "Cards, inputs, secondary button"],
+  ];
+  const CONTRAST = [
+    ["ink on white", "#121a26", "#ffffff", 17.48, "Body text on cards"],
+    ["ink-soft on white", "#566072", "#ffffff", 6.34, "Secondary text"],
+    ["ink-soft on canvas", "#566072", "#eef2f6", 5.64, "Secondary text on page"],
+    ["ink-faint on white", "#8a93a3", "#ffffff", 3.10, "Table headers, placeholders", "small"],
+    ["ink-faint on canvas", "#8a93a3", "#eef2f6", 2.75, "Meta text on page", "small"],
+    ["white on brand-400", "#ffffff", "#39bb80", 2.44, "Primary button (top of gradient)", "small"],
+    ["white on brand-500", "#ffffff", "#1ea468", 3.20, "Primary button, toggle, selected tooth", "small"],
+    ["white on brand-600", "#ffffff", "#148653", 4.60, "Possible darker primary"],
+    ["brand-600 on white", "#148653", "#ffffff", 4.60, "Links, brand text"],
+    ["brand-700 on brand-50", "#136a45", "#ebfaf2", 6.14, "Soft button, Completed badge"],
+    ["coral-600 on white", "#d63c2c", "#ffffff", 4.62, "Danger button"],
+    ["coral-600 on coral-50", "#d63c2c", "#fff1ef", 4.20, "Cancelled / Off badge (11px)", "small"],
+    ["white on coral-500", "#ffffff", "#ef5544", 3.47, "Marked tooth label (10px)", "small"],
+    ["emerald-700 on emerald-50", "#047857", "#ecfdf5", 5.21, "Confirmed / Available badge"],
+    ["amber-700 on amber-50", "#b45309", "#fffbeb", 4.84, "Checked in / In session badge"],
+    ["violet-700 on violet-50", "#6d28d9", "#f5f3ff", 6.48, "In consultation badge"],
+    ["slate-700 on slate-100", "#334155", "#f1f5f9", 9.45, "Scheduled badge"],
+    ["gray-500 on gray-100", "#6b7280", "#f3f4f6", 4.39, "No-show badge (11px)", "small"],
+    ["white on ink", "#ffffff", "#121a26", 17.48, "Dark button, tooltips"],
+    ["Chart: completed", "#4a6fd1", "#ffffff", 4.68, "Trend chart bar", "mark"],
+    ["Chart: booked", "#2e9e78", "#ffffff", 3.34, "Trend chart bar", "mark"],
+    ["Chart: missed", "#c4702a", "#ffffff", 3.69, "Trend chart bar", "mark"],
+    ["Finding: decay", "#e0901b", "#ffffff", 2.57, "Tooth chart", "mark"],
+    ["Finding: root canal", "#e5484d", "#ffffff", 3.91, "Tooth chart", "mark"],
+    ["Finding: surgery", "#7c5cdb", "#ffffff", 4.76, "Tooth chart", "mark"],
+    ["Finding: restored", "#1ea468", "#ffffff", 3.20, "Tooth chart", "mark"],
+    ["Finding: other", "#3b82f6", "#ffffff", 3.68, "Tooth chart", "mark"],
+  ];
+
+  const lum = (hex) => {
+    const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const textOn = (hex) => (lum(hex) > 0.4 ? "dark-text" : "light-text");
+
+  const toast = document.getElementById("toast");
+  let toastTimer;
+  function copy(text) {
+    const done = () => { toast.textContent = `Copied ${text}`; toast.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("show"), 1400); };
+    try { navigator.clipboard.writeText(text).then(done, done); } catch { done(); }
+  }
+
+  document.querySelectorAll("[data-scale]").forEach((el) => {
+    const name = el.dataset.scale;
+    el.innerHTML = SCALES[name].map(([step, hex, tag]) =>
+      `<button class="sw ${textOn(hex)}" style="background:${hex}" data-hex="${hex}" title="${name}-${step} · click to copy">` +
+      (tag ? `<span class="tag">${tag}</span>` : "") +
+      `<b>${step}</b><span class="hex">${hex}</span></button>`).join("");
+  });
+
+  document.querySelector("[data-tiles=neutrals]").innerHTML = NEUTRALS.map(([name, hex, use]) =>
+    `<button class="tile" data-hex="${hex}" title="Click to copy"><div class="chipc" style="background:${hex};${hex === "#ffffff" ? "border-bottom:1px solid var(--line)" : ""}"></div>` +
+    `<div class="info"><b>${name}</b><span class="mono">${hex}</span><span>${use}</span></div></button>`).join("");
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-hex]");
+    if (t) copy(t.dataset.hex.toUpperCase());
+  });
+
+  // Sample stacked bars: completed / open / missed per day
+  const days = [[6,2,1],[8,1,1],[5,3,0],[9,2,2],[7,1,1],[4,4,1],[3,6,0],[0,7,0],[0,5,0],[0,6,0]];
+  document.getElementById("bars").innerHTML = days.map(([c, o, m]) =>
+    `<div class="col"><div style="height:${c*11}px;background:#4a6fd1"></div><div style="height:${o*11}px;background:#2e9e78"></div><div style="height:${m*11}px;background:#c4702a"></div></div>`).join("");
+
+  document.getElementById("contrast-rows").innerHTML = CONTRAST.map(([name, fg, bg, ratio, use, kind]) => {
+    const need = kind === "mark" ? 3 : 4.5;
+    const res = ratio >= need ? ["pass", "Pass"] : ratio >= 3 && kind !== "mark" ? ["warn", "Large text only"] : ["fail", "Fail"];
+    const sample = kind === "mark"
+      ? `<span class="dotc" style="background:${fg}"></span>`
+      : `<span class="sample" style="color:${fg};background:${bg};${bg === "#ffffff" ? "box-shadow:inset 0 0 0 1px var(--line)" : ""}">Aa 123</span>`;
+    return `<tr><td>${name}</td><td>${sample}</td><td class="mono">${ratio.toFixed(2)}:1</td><td><span class="pill ${res[0]}">${res[1]}</span></td><td style="color:var(--ink-soft)">${use}</td></tr>`;
+  }).join("");
+</script>
+</body>
+</html>
