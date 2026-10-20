@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Analytics, type BeforeSendEvent } from "@vercel/analytics/react";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -18,6 +19,16 @@ const queryClient = new QueryClient({
   },
 });
 
+// Analytics leaves the clinic, so send only the route shape: drop query strings
+// (patient search puts names/phones in ?q=) and collapse record IDs.
+function anonymiseUrl(event: BeforeSendEvent): BeforeSendEvent {
+  const url = new URL(event.url);
+  url.search = "";
+  url.hash = "";
+  url.pathname = url.pathname.replace(/\/[0-9a-f]{32}(?=\/|$)/g, "/:id");
+  return { ...event, url: url.toString() };
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -28,5 +39,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
+    <Analytics beforeSend={anonymiseUrl} />
   </React.StrictMode>,
 );
