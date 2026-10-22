@@ -41,7 +41,7 @@ class Settings:
         )
     )
 
-    clinic_name: str = field(default_factory=lambda: os.environ.get("CLINIC_NAME", "Kalinga Institute of Dental Sciences (KIDS)"))
+    clinic_name: str = field(default_factory=lambda: os.environ.get("CLINIC_NAME", "Dr. Rajeev Dental Clinic"))
     clinic_timezone: str = field(default_factory=lambda: os.environ.get("CLINIC_TIMEZONE", "Asia/Kolkata"))
     default_slot_minutes: int = field(default_factory=lambda: int(os.environ.get("DEFAULT_SLOT_MINUTES", "30")))
 
