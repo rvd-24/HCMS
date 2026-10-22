@@ -145,29 +145,43 @@
   }
 }
 
+/* Schedule slots outside OPD hours: still bookable, but hatched so the sessions stand out */
+.off-hours {
+  background-image: repeating-linear-gradient(135deg, rgba(18, 26, 38, 0.035) 0 6px, transparent 6px 12px);
+}
+
 /* 3D anatomy overlay labels (positioned by the scene each frame) */
 .tooth-label {
   @apply absolute left-0 top-0 flex h-6 min-w-6 items-center justify-center rounded-full bg-white/85 px-1.5 text-[10px] font-bold text-ink-soft shadow-card ring-1 ring-ink/5 backdrop-blur transition-opacity duration-300;
   will-change: transform;
 }
-.tooth-label[data-state="marked"] {
-  @apply bg-coral-500 text-white ring-0;
+.tooth-label[data-size="sm"] {
+  @apply h-5 min-w-5 px-1 text-[9px];
+}
+/* Charting colours, matching TOOTH_STATUS_STYLE in AnatomyStage */
+.tooth-label[data-state="noted"] {
+  @apply bg-coral-50 text-coral-600 ring-coral-100;
+}
+.tooth-label[data-state="caries"] {
+  @apply bg-orange-500 text-white ring-0;
+}
+.tooth-label[data-state="filled"] {
+  @apply bg-sky-500 text-white ring-0;
+}
+.tooth-label[data-state="rct"] {
+  @apply bg-violet-500 text-white ring-0;
+}
+.tooth-label[data-state="crown"] {
+  @apply bg-amber-400 text-ink ring-0;
+}
+.tooth-label[data-state="implant"] {
+  @apply bg-slate-600 text-white ring-0;
+}
+.tooth-label[data-state="missing"] {
+  @apply border border-dashed border-ink/30 bg-white/70 text-ink-faint line-through ring-0;
 }
 .tooth-label[data-state="selected"] {
   @apply bg-brand-500 text-white ring-4 ring-brand-100;
-}
-.hotspot-label {
-  @apply absolute left-0 top-0 whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-pop transition-opacity duration-300;
-}
-/* Callout sitting on the dark scan-room panel */
-.dark-glass .text-ink {
-  @apply text-white;
-}
-.dark-glass .text-ink-soft {
-  @apply text-white/75;
-}
-.dark-glass .text-ink-faint {
-  @apply text-white/55;
 }
 /* Patient stage callout laid out as one row under the model on narrower stages */
 .callout-bar,

@@ -26,9 +26,15 @@ class Base(DeclarativeBase):
 
 ROLES = ("admin", "doctor")
 DOCTOR_STATUSES = ("available", "in_session", "off")
-APPOINTMENT_STATUSES = ("scheduled", "confirmed", "checked_in", "in_consultation", "completed", "cancelled", "no_show")
+# "requested" is a patient's ask for a slot that the doctor still has to approve; it holds
+# no time on the calendar until approved (-> confirmed) or declined (-> cancelled).
+APPOINTMENT_STATUSES = ("requested", "scheduled", "confirmed", "checked_in", "in_consultation", "completed", "cancelled", "no_show")
 ACTIVE_APPOINTMENT_STATUSES = ("scheduled", "confirmed", "checked_in", "in_consultation")
-DOCUMENT_KINDS = ("prescription", "extra_page", "pharmacy_receipt", "other")
+# Not counted as booked in dashboards and per-day totals.
+NOT_BOOKED_STATUSES = ("requested", "cancelled", "no_show")
+DOCUMENT_KINDS = ("prescription", "extra_page", "pharmacy_receipt", "other", "scan")
+# Radiographs: an intraoral X-ray covers a few named teeth; an OPG (panoramic) the whole mouth.
+SCAN_KINDS = ("xray", "opg")
 DOCUMENT_STATUSES = ("uploaded", "processing", "extracted", "failed", "confirmed", "attached")
 
 
@@ -177,6 +183,24 @@ class Appointment(Base):
 
     patient: Mapped[Patient] = relationship(lazy="joined")
     doctor: Mapped[Optional[Doctor]] = relationship(lazy="joined")
+
+
+class Scan(Base):
+    """A radiograph on a patient's record. The image itself is a Document (kind "scan"),
+    so it is stored and served like every other upload."""
+    __tablename__ = "scans"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), index=True)
+    document_id: Mapped[str] = mapped_column(ForeignKey("documents.id"))
+    kind: Mapped[str] = mapped_column(String(20), default="xray")
+    # FDI numbers the image shows; empty for an OPG, which shows every tooth.
+    teeth: Mapped[List[int]] = mapped_column(JSON, default=list)
+    taken_on: Mapped[Optional[datetime.date]] = mapped_column(Date)
+    note: Mapped[Optional[str]] = mapped_column(String(500))
+    uploaded_by: Mapped[Optional[str]] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=now)
+
+    document: Mapped[Document] = relationship(lazy="joined")
 
 
 class PharmacyRequest(Base):

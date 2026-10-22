@@ -1,5 +1,4 @@
-import clsx from "clsx";
-import { ArrowLeft, ArrowRight, Building2, CalendarCheck2, FileScan, HeartPulse, Lock, Mail, ShieldCheck, Stethoscope, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarCheck2, FileScan, HeartPulse, Lock, Mail, ShieldCheck, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { BodyFigure } from "@/components/BodyFigure";
@@ -8,18 +7,10 @@ import { EcgLine } from "@/components/viz";
 import { Button, Field, Input, Notice } from "@/components/ui/primitives";
 import { useAuth } from "@/lib/auth";
 
-type Portal = "admin" | "doctor";
-
-const PORTALS: Record<Portal, { label: string; icon: typeof Stethoscope; blurb: string }> = {
-  admin: { label: "Hospital admin", icon: Building2, blurb: "Manage schedules, patients, prescriptions and staff." },
-  doctor: { label: "Doctor", icon: Stethoscope, blurb: "Your appointments, today's queue and patient histories." },
-};
-
 export function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [portal, setPortal] = useState<Portal>("admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,9 +23,9 @@ export function LoginPage() {
     setBusy(true);
     setError(null);
     try {
-      const signedIn = await login(email, password);
-      // The account decides where you land; the portal tab is just a hint.
-      if (signedIn.role !== portal) setPortal(signedIn.role);
+      // One sign-in for everyone: the account's role decides what they see (the clinic's
+      // doctors get their own workspace; the admin login still gets the admin tools).
+      await login(email, password);
       const from = (location.state as { from?: string } | null)?.from;
       navigate(from && from !== "/login" ? from : "/", { replace: true });
     } catch (err) {
@@ -125,37 +116,7 @@ export function LoginPage() {
           <h2 className="font-display text-[44px] font-medium leading-none tracking-tight text-ink">Welcome back</h2>
           <p className="mt-3 text-ink-soft">Sign in to your clinic workspace.</p>
 
-          <div className="mt-8 grid grid-cols-2 gap-3">
-            {(Object.keys(PORTALS) as Portal[]).map((p) => {
-              const P = PORTALS[p];
-              const active = portal === p;
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPortal(p)}
-                  className={clsx(
-                    "group relative overflow-hidden rounded-3xl p-4 text-left transition-all duration-300",
-                    active ? "bg-ink text-white shadow-pop" : "bg-white text-ink shadow-card hover:-translate-y-0.5",
-                  )}
-                >
-                  {active && <span className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-brand-500/50 blur-xl" />}
-                  <span
-                    className={clsx(
-                      "relative mb-3 flex h-10 w-10 items-center justify-center rounded-2xl transition-colors",
-                      active ? "bg-brand-500 text-white" : "bg-brand-50 text-brand-600",
-                    )}
-                  >
-                    <P.icon className="h-5 w-5" />
-                  </span>
-                  <span className="relative block text-sm font-semibold">{P.label}</span>
-                  <span className={clsx("relative mt-0.5 block text-xs leading-snug", active ? "text-white/65" : "text-ink-faint")}>{P.blurb}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <form onSubmit={submit} className="mt-7 space-y-4">
+          <form onSubmit={submit} className="mt-8 space-y-4">
             {error && <Notice tone="red">{error}</Notice>}
             <Field label="Email">
               <div className="relative">
@@ -165,7 +126,7 @@ export function LoginPage() {
                   autoComplete="username"
                   required
                   className="h-12 rounded-2xl pl-11"
-                  placeholder={portal === "admin" ? "admin@clinic.local" : "firstname.lastname@clinic.local"}
+                  placeholder="you@yourclinic.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -190,7 +151,7 @@ export function LoginPage() {
             </Button>
           </form>
           <p className="mt-6 flex items-center justify-center gap-2 text-center text-xs text-ink-faint">
-            <ShieldCheck className="h-3.5 w-3.5" /> Accounts are created by your hospital admin.
+            <ShieldCheck className="h-3.5 w-3.5" /> Accounts are set up by your clinic.
           </p>
         </div>
       </section>

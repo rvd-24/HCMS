@@ -21,6 +21,7 @@ from ..db.models import Document, Patient, User, Visit, new_id
 from ..pipeline.extraction import ExtractionNotConfigured, generate_prescription_summary
 from ..pipeline.text import guess_date_from_filename, parse_time_or_default, valid_iso_date
 from .matching import clean_patient_name, find_doctor_by_name, find_patient_by_mrn, remember_doctor_alias
+from . import storage
 from .records import audit, resolve_path, to_stored_path
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
@@ -53,17 +54,26 @@ def save_upload(
 
     doc_id = new_id()
     today = datetime.date.today()
-    target_dir = get_settings().uploads_dir / f"{today:%Y}" / f"{today:%m}"
-    target_dir.mkdir(parents=True, exist_ok=True)
-    target = target_dir / f"{doc_id}{ext}"
-    target.write_bytes(data)
+    if get_settings().storage_enabled:
+        key = f"uploads/{today:%Y}/{today:%m}/{doc_id}{ext}"
+        stored_path = storage.upload(key, data, content_type)
+        # Keep a cached copy so extraction (which runs right after) doesn't download it back.
+        cached = storage.cache_path(key)
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        cached.write_bytes(data)
+    else:
+        target_dir = get_settings().uploads_dir / f"{today:%Y}" / f"{today:%m}"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target = target_dir / f"{doc_id}{ext}"
+        target.write_bytes(data)
+        stored_path = to_stored_path(target)
 
     document = Document(
         id=doc_id,
         kind=kind,
         status="attached" if visit_id else "uploaded",
         original_filename=Path(filename).name,
-        stored_path=to_stored_path(target),
+        stored_path=stored_path,
         content_type=content_type,
         patient_id=patient_id,
         visit_id=visit_id,

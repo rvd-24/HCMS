@@ -2,18 +2,23 @@ import { addDays, addWeeks, format, isSameDay, isToday, parseISO, startOfWeek } 
 import clsx from "clsx";
 import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, MousePointerClick, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useQuickActions } from "@/app/QuickActions";
 import { AppointmentBadge, PersonCell } from "@/components/domain";
 import { Avatar, Button, Card, EmptyState, Input, PageHeader, PageLoader, Segmented, Select } from "@/components/ui/primitives";
+import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { APPOINTMENT_STATUS, doctorName, fmtTime } from "@/lib/format";
-import { useAppointments, useDoctors } from "@/lib/queries";
+import { APPOINTMENT_STATUS, doctorName, fmtTime, toLocalIso } from "@/lib/format";
+import { useAppointments, useDoctors, useUpdateAppointment } from "@/lib/queries";
 import type { Appointment, AppointmentStatus } from "@/lib/types";
 import { AppointmentDrawer } from "./AppointmentDrawer";
-import { ScheduleGrid, type GridColumn } from "./ScheduleGrid";
+import { RequestsPanel, useApprove } from "./RequestsPanel";
+import { ScheduleGrid, type DropTarget, type GridColumn } from "./ScheduleGrid";
 
 type View = "day" | "week" | "list";
 const ymd = (d: Date) => format(d, "yyyy-MM-dd");
+/** Holds a slot on the calendar (requests don't until approved; cancellations no longer do). */
+const onCalendar = (a: Appointment) => a.status !== "cancelled" && a.status !== "requested";
 
 /** Healtho-style day pills for the visible week, with a dot per booking (up to 5). Click a day to open it. */
 function WeekStrip({ start, anchor, appointments, onPick }: { start: Date; anchor: Date; appointments: Appointment[]; onPick: (d: Date) => void }) {
@@ -21,7 +26,7 @@ function WeekStrip({ start, anchor, appointments, onPick }: { start: Date; ancho
     <div className="flex gap-2 overflow-x-auto border-b border-line/70 px-6 py-4">
       {Array.from({ length: 7 }, (_, i) => {
         const day = addDays(start, i);
-        const count = appointments.filter((a) => a.status !== "cancelled" && isSameDay(parseISO(a.start_at), day)).length;
+        const count = appointments.filter((a) => onCalendar(a) && isSameDay(parseISO(a.start_at), day)).length;
         const today = isToday(day);
         return (
           <button
@@ -54,7 +59,8 @@ function WeekStrip({ start, anchor, appointments, onPick }: { start: Date; ancho
 export function AppointmentsPage() {
   const { user, isAdmin } = useAuth();
   const { openBooking } = useQuickActions();
-  const [view, setView] = useState<View>("week");
+  // Doctors work a day at a time; the front desk plans the week.
+  const [view, setView] = useState<View>(isAdmin ? "week" : "day");
   const [anchor, setAnchor] = useState(new Date());
   const [doctorId, setDoctorId] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -76,7 +82,42 @@ export function AppointmentsPage() {
     q: view === "list" ? q || undefined : undefined,
   });
   const appointments = data ?? [];
-  const visible = view === "list" ? appointments : appointments.filter((a) => a.status !== "cancelled");
+  const visible = view === "list" ? appointments : appointments.filter(onCalendar);
+  const { data: requestData, isLoading: requestsLoading } = useAppointments({ status: "requested", doctor_id: doctorId || undefined });
+  // Next two weeks of booked work, for the side panel (independent of the day/week being viewed).
+  const { data: aheadData } = useAppointments({
+    start: ymd(new Date()),
+    end: ymd(addDays(new Date(), 14)),
+    doctor_id: doctorId || undefined,
+    status: "scheduled,confirmed,checked_in",
+  });
+  const upcoming = (aheadData ?? []).filter((a) => parseISO(a.end_at) >= new Date());
+  const requests = requestData ?? [];
+  const approve = useApprove();
+  const update = useUpdateAppointment();
+
+  const moveTo = (a: Appointment, startAt: string, doctorId: string | undefined, allowOverlap = false) =>
+    update.mutate(
+      { id: a.id, start_at: startAt, doctor_id: doctorId, allow_overlap: allowOverlap },
+      {
+        onSuccess: (m) => toast.success(`Moved ${m.patient.full_name} to ${format(parseISO(m.start_at), "EEE d MMM, h:mm a")}`, { description: "Patient and doctor notified." }),
+        onError: (err) =>
+          err instanceof ApiError && err.status === 409
+            ? toast.error(err.message, { action: { label: "Move anyway", onClick: () => moveTo(a, startAt, doctorId, true) } })
+            : toast.error(err.message),
+      },
+    );
+
+  // A request dropped on the grid is approved at that slot; a booked appointment is moved there.
+  const onDrop = ({ appointment: a, date, time, doctorId: column }: DropTarget) => {
+    const startAt = toLocalIso(date, time);
+    if (a.status === "requested") {
+      if (column && a.doctor && column !== a.doctor.id) return toast.error(`This request is for ${doctorName(a.doctor.full_name)} — drop it in their column.`);
+      return approve.run(a, startAt);
+    }
+    if (parseISO(a.start_at).getTime() === parseISO(startAt).getTime() && (!column || column === a.doctor?.id)) return;
+    moveTo(a, startAt, isAdmin && column !== a.doctor?.id ? column : undefined);
+  };
 
   const step = (dir: number) => setAnchor((d) => (view === "day" ? addDays(d, dir) : addWeeks(d, dir)));
   const label =
@@ -128,7 +169,7 @@ export function AppointmentsPage() {
       <PageHeader
         eyebrow={format(new Date(), "EEEE, d MMMM")}
         title={isAdmin ? "Appointments" : "My schedule"}
-        subtitle={`${appointments.filter((a) => a.status !== "cancelled").length} appointments ${view === "day" ? "on this day" : "this week"}`}
+        subtitle={`${appointments.filter(onCalendar).length} appointments ${view === "day" ? "on this day" : "this week"}${requests.length ? ` · ${requests.length} requests waiting` : ""}`}
         actions={
           <Button icon={CalendarPlus} onClick={() => openBooking({ doctorId: doctorId || undefined })}>
             Add appointment
@@ -136,7 +177,8 @@ export function AppointmentsPage() {
         }
       />
 
-      <Card className="overflow-hidden">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <Card className="min-w-0 overflow-hidden">
         <div className="flex flex-wrap items-center gap-3 border-b border-line/70 px-6 py-4">
           <Segmented
             value={view}
@@ -203,7 +245,7 @@ export function AppointmentsPage() {
               </span>
             ))}
             <span className="ml-auto flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 font-semibold text-white">
-              <MousePointerClick className="h-3.5 w-3.5" /> Click an empty slot to book it
+              <MousePointerClick className="h-3.5 w-3.5" /> Click a slot to book · drag to move
             </span>
           </div>
         )}
@@ -258,9 +300,12 @@ export function AppointmentsPage() {
             showDoctor={isAdmin && view === "week" && !doctorId}
             onSelect={setSelected}
             onSlot={({ date, time, doctorId: d }) => openBooking({ date, time, doctorId: d })}
+            onDrop={onDrop}
           />
         )}
       </Card>
+      <RequestsPanel requests={requests} upcoming={upcoming} loading={requestsLoading} showDoctor={isAdmin && !doctorId} onOpen={setSelected} />
+      </div>
       {selected && <AppointmentDrawer appointmentId={selected.id} initial={selected} onClose={() => setSelected(null)} />}
     </>
   );

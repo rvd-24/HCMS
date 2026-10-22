@@ -186,6 +186,11 @@ DEMO_PATIENTS = [
 ]
 DEMO_REASONS = ["Follow-up", "Scaling & polishing", "Root canal review", "Orthodontic adjustment",
                 "Extraction review", "Consultation", "Dressing change", "Crown fitting"]
+# What patients write when asking for a slot (they wait in the doctor's request queue).
+DEMO_REQUEST_REASONS = ["Tooth pain, upper left", "Bleeding gums while brushing", "Broken filling", "Sensitivity to cold",
+                        "Wisdom tooth pain", "Braces wire poking", "Check-up and cleaning", "Swelling near lower molar"]
+# Half-hour slots in the clinic's OPD hours: 9 am–1 pm and 4–6 pm.
+CLINIC_SLOTS = [datetime.time(h, m) for h in (9, 10, 11, 12, 16, 17) for m in (0, 30)]
 DEMO_DIAGNOSES = [
     ("Chronic generalized gingivitis.", ["Chlorhexidine mouthwash 0.2% — 10ml twice daily"]),
     ("Irreversible pulpitis with 36.", ["Amoxicillin 500mg TDS x 5 days", "Ibuprofen 400mg SOS"]),
@@ -220,8 +225,8 @@ def seed_demo(db: Session, seed: int = 7) -> dict:
         if day.weekday() == 6:
             continue
         for doctor in doctors:
-            for slot in rng.sample(range(16), k=rng.randint(1, 4)):
-                start = datetime.datetime.combine(day, datetime.time(9, 0)) + datetime.timedelta(minutes=30 * slot)
+            for slot in rng.sample(CLINIC_SLOTS, k=rng.randint(1, 4)):
+                start = datetime.datetime.combine(day, slot)
                 if db.scalar(select(Appointment).where(Appointment.doctor_id == doctor.id, Appointment.start_at == start)):
                     continue
                 patient = rng.choice(patients)
@@ -244,8 +249,25 @@ def seed_demo(db: Session, seed: int = 7) -> dict:
                     db.add(Visit(patient_id=patient.id, doctor_id=doctor.id, visit_date=day,
                                  clinic_name=get_settings().clinic_name, diagnosis=diagnosis, medications=meds,
                                  summary=f"Demo visit — {diagnosis}"))
+    # Pending requests for the next few days, at the time each patient asked for.
+    requests = 0
+    for offset in range(0, 4):
+        day = today + datetime.timedelta(days=offset)
+        for doctor in doctors:
+            for slot in rng.sample(CLINIC_SLOTS, k=rng.randint(1, 2)):
+                start = datetime.datetime.combine(day, slot)
+                if start < datetime.datetime.now() or db.scalar(select(Appointment).where(
+                    Appointment.doctor_id == doctor.id, Appointment.start_at == start, Appointment.status == "requested",
+                )):
+                    continue
+                db.add(Appointment(
+                    patient_id=rng.choice(patients).id, doctor_id=doctor.id, start_at=start,
+                    end_at=start + datetime.timedelta(minutes=30), reason=rng.choice(DEMO_REQUEST_REASONS),
+                    location=get_settings().clinic_name, status="requested", source="manual",
+                ))
+                requests += 1
     db.flush()
-    return {"patients": len(patients), "appointments": made}
+    return {"patients": len(patients), "appointments": made, "requests": requests}
 
 
 def fill_contact_emails(db: Session, email: str) -> int:

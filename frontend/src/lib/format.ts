@@ -47,6 +47,7 @@ export function initials(name: string) {
 export const doctorName = (name: string | null | undefined) => (name ? `Dr. ${name}` : "Unassigned");
 
 export const APPOINTMENT_STATUS: Record<AppointmentStatus, { label: string; tone: Tone }> = {
+  requested: { label: "Requested", tone: "blue" },
   scheduled: { label: "Scheduled", tone: "slate" },
   confirmed: { label: "Confirmed", tone: "green" },
   checked_in: { label: "Checked in", tone: "amber" },
@@ -82,5 +83,11 @@ export function nextActions(status: AppointmentStatus): { status: AppointmentSta
       return [];
   }
 }
+
+/** OPD hours the doctors take patients in; the schedule shades everything else. */
+export const OPD_SESSIONS = [
+  { label: "Morning OPD", start: 9 * 60, end: 13 * 60 },
+  { label: "Evening OPD", start: 16 * 60, end: 18 * 60 },
+];
 
 export const isActive = (s: AppointmentStatus) => ["scheduled", "confirmed", "checked_in", "in_consultation"].includes(s);

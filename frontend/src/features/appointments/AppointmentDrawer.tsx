@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import { BellRing, CalendarClock, ExternalLink, FileText, MapPin, Stethoscope, XCircle } from "lucide-react";
+import { BellRing, CalendarClock, Check, ExternalLink, FileText, MapPin, Stethoscope, XCircle } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,8 +8,9 @@ import { Drawer } from "@/components/ui/overlays";
 import { Avatar, Button, Field, Input, KeyValue, Notice, Select, Textarea } from "@/components/ui/primitives";
 import { useAuth } from "@/lib/auth";
 import { doctorName, fmtDateTime, isActive, nextActions, toLocalIso } from "@/lib/format";
-import { useAppointments, useAppointmentStatus, useDoctors, useResendNotification, useUpdateAppointment } from "@/lib/queries";
+import { useAppointments, useAppointmentStatus, useDeclineRequest, useDoctors, useResendNotification, useUpdateAppointment } from "@/lib/queries";
 import type { Appointment } from "@/lib/types";
+import { useApprove } from "./RequestsPanel";
 
 function NotificationSummary({ results }: { results: Record<string, unknown> }) {
   if ("error" in results) return <Notice tone="red">Notification failed: {String(results.error)}</Notice>;
@@ -53,6 +54,9 @@ export function AppointmentDrawer({ appointmentId, initial, onClose }: { appoint
   const status = useAppointmentStatus();
   const update = useUpdateAppointment();
   const resend = useResendNotification();
+  const approve = useApprove();
+  const decline = useDeclineRequest();
+  const requested = a.status === "requested";
   const { data: doctors } = useDoctors();
   const [mode, setMode] = useState<"view" | "reschedule" | "cancel">("view");
   const [date, setDate] = useState(format(parseISO(a.start_at), "yyyy-MM-dd"));
@@ -83,6 +87,16 @@ export function AppointmentDrawer({ appointmentId, initial, onClose }: { appoint
       onClose={onClose}
       title="Appointment"
       footer={
+        mode === "view" && requested ? (
+          <div className="flex flex-wrap gap-2">
+            <Button icon={Check} loading={approve.pending} onClick={() => approve.run(a)}>
+              Approve for {format(parseISO(a.start_at), "EEE d MMM, h:mm a")}
+            </Button>
+            <Button variant="danger" icon={XCircle} onClick={() => setMode("cancel")}>
+              Decline
+            </Button>
+          </div>
+        ) : (
         mode === "view" &&
         isActive(a.status) && (
           <div className="flex flex-wrap gap-2">
@@ -102,7 +116,7 @@ export function AppointmentDrawer({ appointmentId, initial, onClose }: { appoint
               Cancel
             </Button>
           </div>
-        )
+        ))
       }
     >
       <div className="space-y-5">
@@ -140,6 +154,7 @@ export function AppointmentDrawer({ appointmentId, initial, onClose }: { appoint
           </div>
         </dl>
 
+        {requested && <Notice tone="brand">Requested by the patient — the time above is what they asked for. Approve it, decline it, or drag the request onto the schedule to pick another slot.</Notice>}
         {a.cancel_reason && <Notice tone="red">Cancelled: {a.cancel_reason}</Notice>}
 
         {mode === "reschedule" && (
@@ -183,7 +198,28 @@ export function AppointmentDrawer({ appointmentId, initial, onClose }: { appoint
           </div>
         )}
 
-        {mode === "cancel" && (
+        {mode === "cancel" && requested && (
+          <div className="space-y-3 rounded-xl border border-red-200 bg-red-50/40 p-4">
+            <p className="font-medium text-ink">Decline request</p>
+            <Field label="Reason (shared with the patient)">
+              <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Fully booked that day" />
+            </Field>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="danger"
+                loading={decline.isPending}
+                onClick={() => decline.mutate({ id: a.id, reason: reason || undefined }, { onSuccess: () => (toast("Request declined"), setMode("view")) })}
+              >
+                Decline request
+              </Button>
+              <Button variant="ghost" onClick={() => setMode("view")}>
+                Back
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {mode === "cancel" && !requested && (
           <div className="space-y-3 rounded-xl border border-red-200 bg-red-50/40 p-4">
             <p className="font-medium text-ink">Cancel appointment</p>
             <Field label="Reason (shared with the patient)">

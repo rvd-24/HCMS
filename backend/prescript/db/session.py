@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine, event, text
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session, sessionmaker
 
 from ..config import get_settings
@@ -38,7 +39,16 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 
 def init_db() -> None:
-    Base.metadata.create_all(engine)
+    try:
+        Base.metadata.create_all(engine)
+    except DBAPIError as error:
+        # Two processes starting together (a reload and a CLI run, or two workers on deploy)
+        # can both see a new table missing and both CREATE it; the loser fails here. A second
+        # pass finds the table and carries on.
+        message = str(error.orig).lower()
+        if "already exists" not in message and "pg_type_typname_nsp_index" not in message:
+            raise
+        Base.metadata.create_all(engine)
     if engine.dialect.name == "postgresql":
         _enable_row_level_security()
 

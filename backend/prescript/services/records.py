@@ -12,6 +12,7 @@ from ..config import PROJECT_ROOT
 from ..db.models import Appointment, AuditEvent, Doctor, Document, Patient, User, Visit
 from ..integrations.base import Recipient
 from ..pipeline.extraction import NextVisit, PrescriptionSummary
+from . import storage
 
 
 def to_stored_path(path: Path) -> str:
@@ -25,8 +26,25 @@ def to_stored_path(path: Path) -> str:
 
 
 def resolve_path(document: Document) -> Path:
+    """Local path to the document's file; bucket files are downloaded to the cache first."""
+    if storage.is_stored(document.stored_path):
+        return storage.local_copy(storage.key_of(document.stored_path))
     path = Path(document.stored_path)
     return path if path.is_absolute() else PROJECT_ROOT / path
+
+
+def remove_file(document: Document) -> None:
+    """Delete a document's file: the bucket object and its cached copy, or, for local files,
+    only ones under data/uploads (the legacy prescriptions folder is shared, so it's left alone)."""
+    if storage.is_stored(document.stored_path):
+        key = storage.key_of(document.stored_path)
+        storage.delete(key)
+        storage.cache_path(key).unlink(missing_ok=True)
+        return
+    path = Path(document.stored_path)
+    path = path if path.is_absolute() else PROJECT_ROOT / path
+    if "uploads" in path.parts:
+        path.unlink(missing_ok=True)
 
 
 def _page_order(document: Document) -> tuple:

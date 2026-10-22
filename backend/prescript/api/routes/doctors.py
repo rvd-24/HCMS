@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...db.models import Appointment, Department, Doctor, User
+from ...db.models import NOT_BOOKED_STATUSES, Appointment, Department, Doctor, User
 from ...security import hash_password
 from ...services.records import audit
 from ..deps import current_user, require_admin, require_role
@@ -38,7 +38,7 @@ def list_doctors(include_inactive: bool = False, _: User = Depends(current_user)
         select(Appointment.doctor_id, func.count()).where(
             Appointment.start_at >= start,
             Appointment.start_at < start + datetime.timedelta(days=1),
-            Appointment.status.not_in(("cancelled", "no_show")),
+            Appointment.status.not_in(NOT_BOOKED_STATUSES),
         ).group_by(Appointment.doctor_id)
     ).all())
     return [doctor_out(d, today_count=counts.get(d.id, 0)) for d in doctors]

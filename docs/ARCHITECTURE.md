@@ -49,8 +49,25 @@ Appointments → Week (days × time) or Day (doctors × time) or List → click 
 notifications go out in the background → drawer to confirm, check in, reschedule, cancel or resend.
 
 **Doctor's day**
-My day → next patient card with their last visit → queue: Check in → Start consultation → Complete →
-patient profile with the full cross-doctor history; set own availability (Available / In session / Off).
+Doctors land on My schedule (Day view; OPD hours 9 am–1 pm and 4–6 pm, the rest hatched) → Requests
+panel: approve at the patient's preferred time, decline with a reason, or drag a request onto the grid to
+approve it at that slot (booked appointments can be dragged to reschedule too) → drawer: Check in → Start
+consultation → Complete → patient profile with the full cross-doctor history; set own availability
+(Available / In session / Off). The front desk files requests from *Add appointment* with "Ask the doctor
+to approve" (status `requested`, which holds no slot and sends nothing until approved).
+
+**Patient profile**
+Details and a 3D mouth (Bite / Teeth / Upper / Lower, FDI numbering) in the centre; picking a tooth
+shows its radiographs on the right. Scans live in the `scans` table (the image is a `Document` of kind
+`scan`): an intraoral X-ray lists the teeth it shows, an OPG shows every tooth. Below: timeline,
+appointments, medications and documents tabs.
+
+**File storage**
+With `PRESCRIPT_SUPABASE_URL` / `_SERVICE_KEY` / `PRESCRIPT_STORAGE_BUCKET` set, uploads go to a private
+Supabase Storage bucket and the document's `stored_path` is `storage://<key>`; otherwise they stay under
+`data/uploads`. `services.records.resolve_path` hides the difference (bucket files are cached under
+`data/storage-cache` on first use), so the file route, extraction, pharmacy and PDF code read local paths
+either way. Files are only ever served through `GET /api/documents/{id}/file`, after the access check.
 
 **Admin housekeeping**
 Doctors (profiles, contact for notifications, name variants, logins) · Users & access · Activity log ·

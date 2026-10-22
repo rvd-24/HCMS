@@ -2,7 +2,7 @@
 frontend types (frontend/src/lib/types.ts) have a single source to mirror."""
 from typing import Optional
 
-from ..db.models import Appointment, AuditEvent, Doctor, Document, Patient, PharmacyRequest, User, Visit
+from ..db.models import Appointment, AuditEvent, Doctor, Document, Patient, PharmacyRequest, Scan, User, Visit
 
 
 def _iso(value) -> Optional[str]:
@@ -105,6 +105,20 @@ def document_out(d: Document, children: Optional[list] = None) -> dict:
     if children is not None:
         out["children"] = [document_out(c) for c in children]
     return out
+
+
+def scan_out(s: Scan) -> dict:
+    return {
+        "id": s.id,
+        "patient_id": s.patient_id,
+        "kind": s.kind,
+        "teeth": s.teeth or [],
+        "taken_on": _iso(s.taken_on),
+        "note": s.note,
+        "document_id": s.document_id,
+        "original_filename": s.document.original_filename,
+        "created_at": _iso(s.created_at),
+    }
 
 
 def visit_out(v: Visit) -> dict:

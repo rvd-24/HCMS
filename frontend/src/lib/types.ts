@@ -3,6 +3,7 @@
 export type Role = "admin" | "doctor";
 export type DoctorStatus = "available" | "in_session" | "off";
 export type AppointmentStatus =
+  | "requested"
   | "scheduled"
   | "confirmed"
   | "checked_in"
@@ -10,7 +11,9 @@ export type AppointmentStatus =
   | "completed"
   | "cancelled"
   | "no_show";
-export type DocumentKind = "prescription" | "extra_page" | "pharmacy_receipt" | "other";
+export type DocumentKind = "prescription" | "extra_page" | "pharmacy_receipt" | "other" | "scan";
+/** Intraoral X-ray of named teeth, or an OPG (panoramic) of the whole mouth. */
+export type ScanKind = "xray" | "opg";
 export type DocumentStatus = "uploaded" | "processing" | "extracted" | "failed" | "confirmed" | "attached";
 
 export interface DoctorBrief {
@@ -141,6 +144,20 @@ export interface Visit {
   summary: string | null;
   next_visit_note: NextVisit | null;
   documents: DocumentRecord[];
+  created_at: string;
+}
+
+export interface Scan {
+  id: string;
+  patient_id: string;
+  kind: ScanKind;
+  /** FDI numbers the image shows; empty for an OPG, which shows every tooth. */
+  teeth: number[];
+  taken_on: string | null;
+  note: string | null;
+  /** The image, served at /documents/{document_id}/file. */
+  document_id: string;
+  original_filename: string;
   created_at: string;
 }
 

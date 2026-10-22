@@ -67,9 +67,25 @@ class Settings:
         or "2024-08-01-preview"
     )
 
+    # Supabase Storage for uploaded files (prescriptions, scans). All three set = new
+    # uploads go to this private bucket; otherwise they stay under data/uploads.
+    # The service key bypasses Storage policies, so it lives on the backend only.
+    supabase_url: str = field(default_factory=lambda: os.environ.get("PRESCRIPT_SUPABASE_URL", "").rstrip("/"))
+    supabase_service_key: str = field(default_factory=lambda: os.environ.get("PRESCRIPT_SUPABASE_SERVICE_KEY", ""))
+    storage_bucket: str = field(default_factory=lambda: os.environ.get("PRESCRIPT_STORAGE_BUCKET", ""))
+
+    @property
+    def storage_enabled(self) -> bool:
+        return bool(self.supabase_url and self.supabase_service_key and self.storage_bucket)
+
     @property
     def uploads_dir(self) -> Path:
         return self.data_dir / "uploads"
+
+    @property
+    def storage_cache_dir(self) -> Path:
+        """Local copies of bucket files, fetched on first use (safe to delete)."""
+        return self.data_dir / "storage-cache"
 
     @property
     def legacy_visits_json(self) -> Path:

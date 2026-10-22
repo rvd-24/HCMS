@@ -13,6 +13,8 @@ import type {
   DocumentRecord,
   Patient,
   PharmacyRequest,
+  Scan,
+  ScanKind,
   SystemStatus,
   User,
   Visit,
@@ -25,6 +27,7 @@ export const keys = {
   documents: ["documents"] as const,
   doctors: ["doctors"] as const,
   visits: ["visits"] as const,
+  scans: ["scans"] as const,
   users: ["users"] as const,
   audit: ["audit"] as const,
   system: ["system"] as const,
@@ -66,6 +69,8 @@ export interface BookingInput {
   notify: boolean;
   allow_overlap?: boolean;
   origin_visit_id?: string | null;
+  /** File as a request for the doctor to approve rather than booking outright. */
+  request?: boolean;
 }
 export function useBookAppointment() {
   const inv = useInvalidate();
@@ -86,6 +91,23 @@ export function useAppointmentStatus() {
   return useMutation({
     mutationFn: ({ id, status, reason, notify = true }: { id: string; status: AppointmentStatus; reason?: string; notify?: boolean }) =>
       api.post<Appointment>(`/appointments/${id}/status`, { status, reason, notify }),
+    onSuccess: () => inv(keys.appointments, keys.dashboard, keys.patients),
+  });
+}
+// Requests: approve (optionally at another slot, e.g. dropped on the grid) or decline.
+export function useApproveRequest() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; start_at?: string; notify?: boolean; allow_overlap?: boolean }) =>
+      api.post<Appointment>(`/appointments/${id}/approve`, body),
+    onSuccess: () => inv(keys.appointments, keys.dashboard, keys.patients),
+  });
+}
+export function useDeclineRequest() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ id, reason, notify = true }: { id: string; reason?: string; notify?: boolean }) =>
+      api.post<Appointment>(`/appointments/${id}/decline`, { reason, notify }),
     onSuccess: () => inv(keys.appointments, keys.dashboard, keys.patients),
   });
 }
@@ -116,6 +138,29 @@ export function useSavePatient() {
       id ? api.patch<Patient>(`/patients/${id}`, body) : api.post<Patient>("/patients", body),
     onSuccess: () => inv(keys.patients, keys.dashboard),
   });
+}
+
+// Scans (X-rays / OPGs)
+export const usePatientScans = (patientId: string | undefined) =>
+  useQuery({ queryKey: [...keys.scans, patientId], queryFn: () => api.get<Scan[]>(`/patients/${patientId}/scans`), enabled: !!patientId });
+export function useUploadScan() {
+  const inv = useInvalidate();
+  return useMutation({
+    mutationFn: ({ patientId, file, kind, teeth, takenOn, note }: { patientId: string; file: File; kind: ScanKind; teeth: number[]; takenOn?: string; note?: string }) => {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("kind", kind);
+      form.append("teeth", teeth.join(","));
+      if (takenOn) form.append("taken_on", takenOn);
+      if (note) form.append("note", note);
+      return api.post<Scan>(`/patients/${patientId}/scans`, form);
+    },
+    onSuccess: () => inv(keys.scans),
+  });
+}
+export function useDeleteScan() {
+  const inv = useInvalidate();
+  return useMutation({ mutationFn: (id: string) => api.delete(`/scans/${id}`), onSuccess: () => inv(keys.scans) });
 }
 
 // Visits

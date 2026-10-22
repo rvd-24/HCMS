@@ -37,6 +37,7 @@ export function greeting() {
 export function queueSegments(today: Appointment[]) {
   const c = { completed: 0, open: 0, missed: 0 };
   today.forEach((a) => {
+    if (a.status === "requested") return; // not booked yet
     if (a.status === "completed") c.completed++;
     else if (a.status === "cancelled" || a.status === "no_show") c.missed++;
     else c.open++;

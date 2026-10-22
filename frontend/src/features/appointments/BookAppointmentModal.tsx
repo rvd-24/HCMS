@@ -34,6 +34,10 @@ export function BookAppointmentModal({ prefill, onClose }: { prefill: BookingPre
   const [reason, setReason] = useState(prefill.reason ?? "Follow-up");
   const [location, setLocation] = useState(prefill.location ?? "");
   const [notify, setNotify] = useState(true);
+  // Front desk can pass a patient's ask to the doctor instead of booking it outright.
+  const [request, setRequest] = useState(false);
+  const canRequest = user?.role === "admin" && !!doctorId;
+  const asRequest = request && canRequest;
   const [conflict, setConflict] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,12 +55,18 @@ export function BookAppointmentModal({ prefill, onClose }: { prefill: BookingPre
         notify,
         allow_overlap: allowOverlap,
         origin_visit_id: prefill.originVisitId ?? null,
+        request: asRequest,
       },
       {
         onSuccess: (a) => {
-          toast.success(`Booked ${a.patient.full_name} for ${format(new Date(a.start_at), "EEE d MMM, h:mm a")}`, {
-            description: notify ? "Invites and notifications are being sent." : undefined,
-          });
+          if (asRequest)
+            toast.success(`Request sent to ${doctorName(a.doctor?.full_name)}`, {
+              description: `${a.patient.full_name} prefers ${format(new Date(a.start_at), "EEE d MMM, h:mm a")}. They're notified once it's approved.`,
+            });
+          else
+            toast.success(`Booked ${a.patient.full_name} for ${format(new Date(a.start_at), "EEE d MMM, h:mm a")}`, {
+              description: notify ? "Invites and notifications are being sent." : undefined,
+            });
           onClose();
         },
         onError: (err) => {
@@ -71,7 +81,7 @@ export function BookAppointmentModal({ prefill, onClose }: { prefill: BookingPre
     <Modal
       open
       onClose={onClose}
-      title="Book appointment"
+      title={asRequest ? "Request appointment" : "Book appointment"}
       description={prefill.originVisitId ? "Follow-up requested on a prescription" : undefined}
       footer={
         <>
@@ -84,7 +94,7 @@ export function BookAppointmentModal({ prefill, onClose }: { prefill: BookingPre
             </Button>
           ) : (
             <Button loading={book.isPending} onClick={() => submit()}>
-              Book appointment
+              {asRequest ? "Send request" : "Book appointment"}
             </Button>
           )}
         </>
@@ -141,7 +151,17 @@ export function BookAppointmentModal({ prefill, onClose }: { prefill: BookingPre
         <Field label="Location" hint={`Defaults to ${system?.clinic_name ?? "the clinic"}`}>
           <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="OPD, department or room" />
         </Field>
-        <div className="rounded-xl border border-line p-3.5">
+        {canRequest && (
+          <div className="rounded-xl border border-line p-3.5">
+            <Toggle
+              checked={request}
+              onChange={(v) => (setRequest(v), setConflict(null))}
+              label="Ask the doctor to approve"
+              description="Goes to the doctor's request queue at this preferred time instead of being booked now. The patient is notified once it's approved."
+            />
+          </div>
+        )}
+        {!asRequest && <div className="rounded-xl border border-line p-3.5">
           <Toggle
             checked={notify}
             onChange={setNotify}
@@ -163,7 +183,7 @@ export function BookAppointmentModal({ prefill, onClose }: { prefill: BookingPre
               <BellRing className="h-3.5 w-3.5" /> Google isn't connected — notifications go out, but no calendar event is created.
             </p>
           )}
-        </div>
+        </div>}
       </div>
     </Modal>
   );

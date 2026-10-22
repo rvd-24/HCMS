@@ -1,15 +1,31 @@
 // Healtho-style stage: 3D model in the middle, view controls on the left, one glass callout,
 // view pills along the bottom.
 import clsx from "clsx";
-import { ChevronLeft, ChevronRight, Move, PersonStanding, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Move, ZoomIn, ZoomOut } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { doctorName, fmtDate } from "@/lib/format";
-import { toothName, toothRecords } from "@/lib/teeth";
+import { TOOTH_STATUS, toothChart, toothName, toothRecords, type ToothStatus } from "@/lib/teeth";
 import type { Visit } from "@/lib/types";
 import type { AnatomyCanvasHandle } from "./AnatomyCanvas";
 import type { AnatomyView } from "./scene";
 
 const AnatomyCanvas = lazy(() => import("./AnatomyCanvas"));
+
+// Chip and swatch colours per charting status; the 3D tints and .tooth-label[data-state] match.
+const STATUS_STYLE: Record<ToothStatus, { chip: string; dot: string; badge?: string }> = {
+  noted: { chip: "bg-white text-coral-600 ring-1 ring-coral-100", dot: "bg-coral-100 ring-1 ring-coral-400" },
+  caries: { chip: "bg-orange-500 text-white", dot: "bg-orange-500" },
+  filled: { chip: "bg-sky-500 text-white", dot: "bg-sky-500" },
+  rct: { chip: "bg-violet-500 text-white", dot: "bg-violet-500" },
+  crown: { chip: "bg-amber-400 text-ink", dot: "bg-amber-400" },
+  implant: { chip: "bg-slate-600 text-white", dot: "bg-slate-600" },
+  missing: {
+    chip: "border border-dashed border-ink/30 bg-white/70 text-ink-faint line-through",
+    dot: "border border-dashed border-ink/40 bg-white",
+    badge: "border border-dashed border-ink/30 bg-white text-ink-soft", // no strike-through on the word itself
+  },
+};
+const LEGEND: ToothStatus[] = ["caries", "filled", "rct", "crown", "implant", "missing", "noted"];
 
 function ToothIcon({ className }: { className?: string }) {
   return (
@@ -27,34 +43,61 @@ function ArchIcon({ flip, className }: { flip?: boolean; className?: string }) {
   );
 }
 
+function BiteIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="4" width="18" height="16" rx="5" />
+      <path d="M6 12h12M9 8.5V12M12 8.5V12M15 8.5V12M9 12v3.5M12 12v3.5M15 12v3.5" />
+    </svg>
+  );
+}
+
 const VIEWS: { value: AnatomyView; label: string; icon: (p: { className?: string }) => ReactNode }[] = [
-  { value: "body", label: "Full body", icon: (p) => <PersonStanding {...p} /> },
+  { value: "bite", label: "Bite", icon: (p) => <BiteIcon {...p} /> },
   { value: "arches", label: "Teeth", icon: (p) => <ToothIcon {...p} /> },
   { value: "upper", label: "Upper arch", icon: (p) => <ArchIcon {...p} /> },
   { value: "lower", label: "Lower arch", icon: (p) => <ArchIcon flip {...p} /> },
 ];
 
-export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dental: boolean; header: ReactNode }) {
+export function AnatomyStage({
+  visits,
+  dental,
+  header,
+  onSelectedChange,
+}: {
+  visits: Visit[];
+  dental: boolean;
+  header: ReactNode;
+  /** The tooth picked on the model or from the chips (FDI), so the page can show its scans. */
+  onSelectedChange?: (fdi: number | null) => void;
+}) {
   const records = useMemo(() => toothRecords(visits), [visits]);
   const marked = useMemo(() => [...records.keys()], [records]);
+  const chart = useMemo(() => toothChart(visits), [visits]);
+  const statuses = useMemo(() => [...chart].map(([pos, e]) => [records.get(pos)?.fdi ?? pos, e.status] as [number, ToothStatus]), [chart, records]);
+  const present = LEGEND.filter((st) => [...chart.values()].some((e) => e.status === st));
+  const anyPlanned = [...chart.values()].some((e) => e.planned);
   const latest = marked[0] ?? null; // records are built newest visit first
-  const [view, setView] = useState<AnatomyView>(dental ? "arches" : "body");
+  const [view, setView] = useState<AnatomyView>("bite");
   const [selected, setSelected] = useState<number | null>(latest);
   const [hover, setHover] = useState<{ fdi: number; x: number; y: number } | null>(null);
   const canvas = useRef<AnatomyCanvasHandle>(null);
 
   useEffect(() => setSelected(latest), [latest]);
-  useEffect(() => setView(dental ? "arches" : "body"), [dental]);
+  useEffect(() => onSelectedChange?.(selected), [selected, onSelectedChange]);
 
   const idx = VIEWS.findIndex((v) => v.value === view);
   const step = (d: number) => setView(VIEWS[(idx + d + VIEWS.length) % VIEWS.length].value);
   const rec = selected !== null ? records.get(selected) : undefined;
   const hoverRec = hover ? records.get(hover.fdi) : undefined;
+  const entry = selected !== null ? chart.get(selected) : undefined;
+  const hoverEntry = hover ? chart.get(hover.fdi) : undefined;
   const lastVisit = [...visits].filter((v) => v.visit_date).sort((a, b) => b.visit_date!.localeCompare(a.visit_date!))[0];
 
   // Float the callout beside the model only when the stage is wide enough to fit both.
   const area = useRef<HTMLDivElement>(null);
   const [wide, setWide] = useState(true);
+  const floating = wide;
   useEffect(() => {
     if (!area.current) return;
     const ro = new ResizeObserver(([e]) => setWide(e.contentRect.width >= 680));
@@ -63,11 +106,11 @@ export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dent
   }, []);
 
   const callout =
-    view === "body" || selected === null ? (
+    selected === null ? (
       <>
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-brand-600 shadow-card">
-            <PersonStanding className="h-5 w-5" />
+            <ToothIcon className="h-5 w-5" />
           </span>
           <div>
             <p className="font-semibold text-ink">Overview</p>
@@ -86,7 +129,7 @@ export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dent
           <span
             className={clsx(
               "flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-card",
-              rec ? "bg-coral-500 text-white" : "bg-white text-brand-600",
+              entry ? STATUS_STYLE[entry.status].chip : rec ? "bg-coral-500 text-white" : "bg-white text-brand-600",
             )}
           >
             <ToothIcon className="h-5 w-5" />
@@ -100,6 +143,19 @@ export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dent
           {rec?.visits.length ?? 0}
           <span className="ml-1.5 text-base font-medium tracking-normal text-ink-soft">{rec?.visits.length === 1 ? "visit" : "visits"}</span>
         </p>
+        {entry && (
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            <span className={clsx("rounded-full px-2 py-0.5 text-[11px] font-bold", STATUS_STYLE[entry.status].badge ?? STATUS_STYLE[entry.status].chip)}>
+              {TOOTH_STATUS[entry.status].done}
+            </span>
+            {entry.since && <span className="text-[11px] text-ink-faint">{fmtDate(entry.since, "d MMM yyyy")}</span>}
+            {entry.planned && (
+              <span className="rounded-full border border-dashed border-brand-400 px-2 py-0.5 text-[11px] font-bold text-brand-700">
+                {entry.planned === "noted" ? "Further care advised" : `${TOOTH_STATUS[entry.planned].label} planned`}
+              </span>
+            )}
+          </div>
+        )}
         <p className="mt-2 truncate text-xs text-ink-faint">
           {rec
             ? `Last noted ${fmtDate(rec.visits[0].visit_date, "d MMM")} · ${doctorName(rec.visits[0].doctor?.full_name ?? rec.visits[0].doctor_name_raw)}`
@@ -112,38 +168,47 @@ export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dent
     <div className="relative flex h-full min-h-[640px] min-w-0 flex-col overflow-hidden rounded-4xl bg-gradient-to-b from-white via-white to-canvas/70 p-6 shadow-card ring-1 ring-white sm:p-8">
       <div className="pointer-events-none absolute left-1/2 top-[45%] h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-lime-200/50 via-brand-100/50 to-sky-100/60 blur-3xl" />
       <div className="relative z-10">{header}</div>
-      {view !== "body" && (
-        <div className="relative z-10 mt-4 flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-[11px] font-bold uppercase tracking-wider text-ink-faint">
-            {marked.length ? "In the notes" : "No teeth named in notes yet"}
-          </span>
-          {marked.map((p) => (
+      <div className="relative z-10 mt-4 flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-[11px] font-bold uppercase tracking-wider text-ink-faint">
+          {marked.length ? "In the notes" : "No teeth named in notes yet"}
+        </span>
+        {marked.map((p) => {
+          const e = chart.get(p);
+          return (
             <button
               key={p}
               onClick={() => setSelected(p)}
+              title={e ? `${TOOTH_STATUS[e.status].done}${e.planned ? ` · ${e.planned === "noted" ? "further care advised" : `${TOOTH_STATUS[e.planned].label.toLowerCase()} planned`}` : ""}` : undefined}
               className={clsx(
-                "rounded-full px-2.5 py-1 text-xs font-bold transition-all",
-                selected === p ? "bg-brand-500 text-white shadow-glow-sm" : "bg-white text-coral-600 ring-1 ring-coral-100 hover:-translate-y-0.5",
+                "relative rounded-full px-2.5 py-1 text-xs font-bold transition-all hover:-translate-y-0.5",
+                STATUS_STYLE[e?.status ?? "noted"].chip,
+                selected === p && "ring-2 ring-brand-500 ring-offset-2 ring-offset-white",
               )}
             >
               {records.get(p)!.fdi}
+              {e?.planned && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brand-500 ring-2 ring-white" />}
             </button>
+          );
+        })}
+      </div>
+      {present.length > 0 && (
+        <div className="relative z-10 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-soft">
+          {present.map((st) => (
+            <span key={st} className="flex items-center gap-1.5">
+              <span className={clsx("h-2.5 w-2.5 rounded-full", STATUS_STYLE[st].dot)} />
+              {TOOTH_STATUS[st].label}
+            </span>
           ))}
+          {anyPlanned && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-brand-500" />
+              Work planned
+            </span>
+          )}
         </div>
       )}
 
       <div ref={area} className="relative min-h-[380px] flex-1">
-        {/* scan-room panel behind the hologram (body view only) */}
-        <div
-          className={clsx(
-            "pointer-events-none absolute inset-0 overflow-hidden rounded-[2rem] bg-[radial-gradient(ellipse_at_50%_45%,#16704b_0%,#0b3f2b_45%,#06241a_100%)] transition-all duration-700",
-            view === "body" ? "scale-100 opacity-100" : "scale-95 opacity-0",
-          )}
-        >
-          <div className="dot-grid absolute inset-0 opacity-20" />
-          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent" />
-        </div>
-
         {/* model */}
         <div className="absolute inset-0">
           <Suspense
@@ -156,13 +221,11 @@ export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dent
             <AnatomyCanvas
               ref={canvas}
               view={view}
-              marked={marked}
-              selected={view === "body" ? null : selected}
-              hotspot={dental ? (marked.length ? `Teeth · ${marked.length} in notes` : "Teeth") : null}
-              insetRight={wide ? 236 : 0}
+              statuses={statuses}
+              selected={selected}
+              insetRight={floating ? 236 : 0}
               onHover={(fdi, x, y) => setHover(fdi ? { fdi, x, y } : null)}
               onSelect={(fdi) => setSelected(fdi)}
-              onHotspot={(v) => setView(v)}
             />
           </Suspense>
         </div>
@@ -186,12 +249,9 @@ export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dent
           ))}
         </div>
 
-        {wide && (
+        {floating && (
           <div
-            className={clsx(
-              "absolute right-0 top-[14%] z-10 w-[220px] animate-fade-up rounded-3xl border p-5 shadow-float backdrop-blur-xl transition-colors duration-700",
-              view === "body" ? "dark-glass border-white/15 bg-white/10" : "border-white/80 bg-white/60",
-            )}
+            className="absolute right-0 top-[14%] z-10 w-[220px] animate-fade-up rounded-3xl border border-white/80 bg-white/60 p-5 shadow-float backdrop-blur-xl"
           >
             {callout}
           </div>
@@ -205,12 +265,13 @@ export function AnatomyStage({ visits, dental, header }: { visits: Visit[]; dent
           >
             <span className="font-bold">{hoverRec?.fdi ?? hover.fdi}</span>{" "}
             <span className="capitalize text-white/75">{toothName(hoverRec?.fdi ?? hover.fdi)}</span>
-            {hoverRec && <span className="ml-1.5 rounded-full bg-coral-500 px-1.5 py-0.5 text-[10px] font-bold">{hoverRec.visits.length}×</span>}
+            {hoverEntry && <span className={clsx("ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold", STATUS_STYLE[hoverEntry.status].badge ?? STATUS_STYLE[hoverEntry.status].chip)}>{TOOTH_STATUS[hoverEntry.status].label}</span>}
+            {hoverRec && <span className="ml-1.5 text-[10px] text-white/70">{hoverRec.visits.length}×</span>}
           </div>
         )}
       </div>
 
-      {!wide && <div className="callout-bar relative z-10 mt-4 rounded-3xl bg-canvas/80 px-5 py-4 ring-1 ring-ink/5">{callout}</div>}
+      {!floating && <div className="callout-bar relative z-10 mt-4 rounded-3xl bg-canvas/80 px-5 py-4 ring-1 ring-ink/5">{callout}</div>}
 
       {/* view pills */}
       <div className="relative z-10 mt-4 flex items-center justify-center gap-2">

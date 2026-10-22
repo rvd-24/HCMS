@@ -10,7 +10,7 @@ import { doctorName } from "@/lib/format";
 import { useAttachDocument, usePharmacyRequests, useRequestPharmacy, useUpdateVisit } from "@/lib/queries";
 import type { DocumentRecord, Visit } from "@/lib/types";
 
-const KIND_LABEL: Record<string, string> = { prescription: "Case sheet", extra_page: "Extra page", pharmacy_receipt: "Pharmacy receipt", other: "Other" };
+const KIND_LABEL: Record<string, string> = { prescription: "Case sheet", extra_page: "Extra page", pharmacy_receipt: "Pharmacy receipt", other: "Other", scan: "Scan" };
 
 export function Lightbox({ doc, onClose }: { doc: DocumentRecord; onClose: () => void }) {
   return (

@@ -1,13 +1,14 @@
 """FastAPI app. In production the built frontend (frontend/dist) is served from
 the same origin; in development Vite proxies /api to this server."""
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api import api_router
 from .config import PROJECT_ROOT, get_settings
 from .db import init_db
+from .services.storage import StorageError
 
 FRONTEND_DIST = PROJECT_ROOT / "frontend" / "dist"
 
@@ -24,6 +25,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(api_router)
+
+    @app.exception_handler(StorageError)
+    def storage_unavailable(_: Request, error: StorageError):
+        print(f"storage error: {error}")
+        return JSONResponse({"detail": "File storage is unavailable right now. Please try again."}, status_code=503)
 
     @app.get("/api/health")
     def health():

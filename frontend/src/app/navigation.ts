@@ -31,7 +31,8 @@ export const NAV: NavSection[] = [
   {
     title: "Basics",
     items: [
-      { to: "/", label: { admin: "Dashboard", doctor: "My day" }, icon: LayoutDashboard, roles: ["admin", "doctor"] },
+      // Doctors land on their schedule instead of a dashboard.
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, roles: ["admin"] },
       { to: "/appointments", label: { admin: "Appointments", doctor: "My schedule" }, icon: CalendarDays, roles: ["admin", "doctor"] },
       { to: "/patients", label: { admin: "Patients", doctor: "My patients" }, icon: Users, roles: ["admin", "doctor"] },
       { to: "/prescriptions", label: "Prescriptions", icon: FileScan, roles: ["admin", "doctor"], badge: "pendingReview" },

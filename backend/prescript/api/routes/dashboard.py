@@ -8,7 +8,7 @@ from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
 
 from ...db import get_db
-from ...db.models import ACTIVE_APPOINTMENT_STATUSES, Appointment, AuditEvent, Doctor, Document, Patient, User, Visit
+from ...db.models import ACTIVE_APPOINTMENT_STATUSES, NOT_BOOKED_STATUSES, Appointment, AuditEvent, Doctor, Document, Patient, User, Visit
 from ..deps import current_user, doctor_scope, require_admin
 from ..serializers import appointment_out, audit_out, doctor_out, visit_out
 
@@ -36,6 +36,8 @@ def _trend(db: Session, days_back: int, days_forward: int, doctor_id=None):
     buckets = defaultdict(lambda: {"booked": 0, "completed": 0, "missed": 0})
     for a in rows:
         b = buckets[a.start_at.date()]
+        if a.status == "requested":
+            continue
         if a.status in ("cancelled", "no_show"):
             b["missed"] += 1
         else:
@@ -85,15 +87,15 @@ def admin_dashboard(
     doctors = list(db.scalars(select(Doctor).where(Doctor.is_active).order_by(Doctor.full_name)).unique())
     per_doctor_today = defaultdict(int)
     for a in today_appts:
-        if a.status not in ("cancelled", "no_show"):
+        if a.status not in NOT_BOOKED_STATUSES:
             per_doctor_today[a.doctor_id] += 1
 
     activity = db.scalars(select(AuditEvent).order_by(AuditEvent.created_at.desc()).limit(8)).unique()
 
     return {
         "kpis": {
-            "today_total": sum(v for k, v in by_status.items() if k not in ("cancelled", "no_show")),
-            "today_total_yesterday": sum(1 for a in yesterday_appts if a.status not in ("cancelled", "no_show")),
+            "today_total": sum(v for k, v in by_status.items() if k not in NOT_BOOKED_STATUSES),
+            "today_total_yesterday": sum(1 for a in yesterday_appts if a.status not in NOT_BOOKED_STATUSES),
             "checked_in": by_status["checked_in"] + by_status["in_consultation"],
             "completed_today": by_status["completed"],
             "upcoming_7d": upcoming,
@@ -135,11 +137,11 @@ def doctor_dashboard(user: User = Depends(current_user), db: Session = Depends(g
     return {
         "doctor": doctor_out(user.doctor) if user.doctor else None,
         "kpis": {
-            "today_total": sum(v for k, v in by_status.items() if k not in ("cancelled", "no_show")),
+            "today_total": sum(v for k, v in by_status.items() if k not in NOT_BOOKED_STATUSES),
             "remaining_today": sum(by_status[s] for s in ("scheduled", "confirmed", "checked_in")),
             "waiting": by_status["checked_in"],
             "completed_today": by_status["completed"],
-            "week_total": sum(1 for a in week_appts if a.status not in ("cancelled", "no_show")),
+            "week_total": sum(1 for a in week_appts if a.status not in NOT_BOOKED_STATUSES),
             "patients_seen": patients_seen,
         },
         "next_up": appointment_out(next_up) if next_up else None,

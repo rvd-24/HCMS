@@ -8,7 +8,6 @@ import { AppointmentsPage } from "@/features/appointments/AppointmentsPage";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { LandingPage } from "@/features/landing/LandingPage";
 import { AdminDashboard } from "@/features/dashboard/AdminDashboard";
-import { DoctorDashboard } from "@/features/dashboard/DoctorDashboard";
 import { DoctorsPage } from "@/features/doctors/DoctorsPage";
 import { InboxPage } from "@/features/documents/InboxPage";
 import { ReviewPage } from "@/features/documents/ReviewPage";
@@ -35,7 +34,7 @@ function RoleGate({ roles, children }: { roles: Role[]; children: ReactNode }) {
 
 function Home() {
   const { user } = useAuth();
-  return user?.role === "doctor" ? <DoctorDashboard /> : <AdminDashboard />;
+  return user?.role === "doctor" ? <Navigate to="/appointments" replace /> : <AdminDashboard />;
 }
 
 export function App() {

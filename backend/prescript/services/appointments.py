@@ -53,9 +53,12 @@ def book(
     source: str = "manual",
     origin_visit_id: Optional[str] = None,
     allow_overlap: bool = False,
+    requested: bool = False,
 ) -> Appointment:
+    """Book a slot, or with requested=True file a request at the patient's preferred
+    time for the doctor to approve (it doesn't hold the slot, so no clash check yet)."""
     end_at = start_at + datetime.timedelta(minutes=duration_minutes or get_settings().default_slot_minutes)
-    if not allow_overlap:
+    if not allow_overlap and not requested:
         clash = find_conflict(db, doctor.id if doctor else None, start_at, end_at)
         if clash:
             raise SlotConflict(
@@ -70,12 +73,37 @@ def book(
         location=location or get_settings().clinic_name,
         source=source,
         origin_visit_id=origin_visit_id,
+        status="requested" if requested else "scheduled",
         created_by=actor.id if actor else None,
     )
     db.add(appointment)
     db.flush()
-    audit(db, actor, "appointment.booked", "appointment", appointment.id,
+    audit(db, actor, "appointment.requested" if requested else "appointment.booked", "appointment", appointment.id,
           f"{patient.full_name} with {doctor.full_name if doctor else 'unassigned'} on {start_at:%Y-%m-%d %H:%M}")
+    return appointment
+
+
+def approve(
+    db: Session,
+    appointment: Appointment,
+    actor: User,
+    start_at: Optional[datetime.datetime] = None,
+    duration_minutes: Optional[int] = None,
+    allow_overlap: bool = False,
+) -> Appointment:
+    """Accept a request, at the time asked for or at the slot the doctor dropped it on."""
+    if appointment.status != "requested":
+        raise ValueError("Only pending requests can be approved")
+    start = start_at or appointment.start_at
+    minutes = duration_minutes or int((appointment.end_at - appointment.start_at).total_seconds() // 60)
+    end = start + datetime.timedelta(minutes=minutes)
+    if not allow_overlap:
+        clash = find_conflict(db, appointment.doctor_id, start, end, ignore_id=appointment.id)
+        if clash:
+            raise SlotConflict(f"Clashes with {clash.patient.full_name} at {clash.start_at:%H:%M}")
+    appointment.start_at, appointment.end_at = start, end
+    appointment.status = "confirmed"
+    audit(db, actor, "appointment.approved", "appointment", appointment.id, f"For {start:%Y-%m-%d %H:%M}")
     return appointment
 
 
@@ -150,7 +178,7 @@ def notify_booking(appointment_id: str) -> None:
 
 
 def notify_change(appointment_id: str, kind: str) -> None:
-    """Short text notice for reschedules and cancellations."""
+    """Short text notice for reschedules, cancellations and declined requests."""
     with session_scope() as db:
         appointment = db.get(Appointment, appointment_id)
         if not appointment:
@@ -158,7 +186,15 @@ def notify_change(appointment_id: str, kind: str) -> None:
         patient, doctor = appointment.patient, appointment.doctor
         when = appointment.start_at.strftime("%A, %d %B %Y at %I:%M %p")
         doctor_name = doctor.full_name if doctor else "your doctor"
-        if kind == "cancelled":
+        if kind == "declined":
+            subject = f"Appointment request declined: {patient.full_name}"
+            text = (
+                f"{doctor_name} can't see {patient.full_name} on {when} as requested. "
+                "Please contact the clinic to pick another time."
+            )
+            if appointment.cancel_reason:
+                text += f"\nReason: {appointment.cancel_reason}"
+        elif kind == "cancelled":
             subject = f"Appointment cancelled: {patient.full_name}"
             text = f"The appointment for {patient.full_name} with {doctor_name} on {when} has been cancelled."
             if appointment.cancel_reason:

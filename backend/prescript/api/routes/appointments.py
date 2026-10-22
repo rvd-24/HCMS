@@ -9,7 +9,7 @@ from ...db import get_db
 from ...db.models import Appointment, Doctor, User
 from ...services import appointments as svc
 from ..deps import current_user, doctor_scope, get_accessible_patient
-from ..schemas import AppointmentIn, AppointmentPatch, AppointmentStatusIn
+from ..schemas import AppointmentApproveIn, AppointmentDeclineIn, AppointmentIn, AppointmentPatch, AppointmentStatusIn
 from ..serializers import appointment_out
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
@@ -92,12 +92,13 @@ def create_appointment(
             db, patient, doctor, body.start_at.replace(tzinfo=None), user,
             duration_minutes=body.duration_minutes, reason=body.reason, location=body.location,
             source="prescription" if body.origin_visit_id else "manual",
-            origin_visit_id=body.origin_visit_id, allow_overlap=body.allow_overlap,
+            origin_visit_id=body.origin_visit_id, allow_overlap=body.allow_overlap, requested=body.request,
         )
     except svc.SlotConflict as error:
         raise HTTPException(status.HTTP_409_CONFLICT, str(error))
     db.commit()
-    if body.notify:
+    # A request is only announced once the doctor approves it.
+    if body.notify and not body.request:
         background.add_task(svc.notify_booking, appointment.id)
     return appointment_out(appointment)
 
@@ -156,6 +157,51 @@ def change_status(
     db.commit()
     if body.status == "cancelled" and body.notify:
         background.add_task(svc.notify_change, appointment.id, "cancelled")
+    return appointment_out(appointment)
+
+
+@router.post("/{appointment_id}/approve")
+def approve_request(
+    appointment_id: str,
+    body: AppointmentApproveIn,
+    background: BackgroundTasks,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    appointment = _get_scoped(db, appointment_id, user)
+    if appointment.status != "requested":
+        raise HTTPException(status.HTTP_409_CONFLICT, "This request has already been handled")
+    try:
+        svc.approve(
+            db, appointment, user,
+            start_at=body.start_at.replace(tzinfo=None) if body.start_at else None,
+            duration_minutes=body.duration_minutes, allow_overlap=body.allow_overlap,
+        )
+    except svc.SlotConflict as error:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(error))
+    db.commit()
+    if body.notify:
+        background.add_task(svc.notify_booking, appointment.id)
+    return appointment_out(appointment)
+
+
+@router.post("/{appointment_id}/decline")
+def decline_request(
+    appointment_id: str,
+    body: AppointmentDeclineIn,
+    background: BackgroundTasks,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    appointment = _get_scoped(db, appointment_id, user)
+    if appointment.status != "requested":
+        raise HTTPException(status.HTTP_409_CONFLICT, "This request has already been handled")
+    appointment.status = "cancelled"
+    appointment.cancel_reason = body.reason
+    svc.audit(db, user, "appointment.declined", "appointment", appointment.id, body.reason or "")
+    db.commit()
+    if body.notify:
+        background.add_task(svc.notify_change, appointment.id, "declined")
     return appointment_out(appointment)
 
 

@@ -11,7 +11,8 @@ from ...db.models import Doctor, Document, PharmacyRequest, User
 from ...services import appointments as appt_svc
 from ...services.documents import UploadError, child_pages, confirm_document, find_duplicate, run_extraction, save_upload
 from ...services.pharmacy import run_pharmacy_request
-from ...services.records import audit, doctor_can_access_patient, resolve_path
+from ...services.records import audit, doctor_can_access_patient, remove_file, resolve_path
+from ...services.storage import StorageError
 from ..deps import current_user, doctor_scope
 from ..schemas import DocumentConfirm
 from ..serializers import appointment_out, document_out, visit_out
@@ -105,7 +106,10 @@ def get_document(document_id: str, user: User = Depends(current_user), db: Sessi
 @router.get("/{document_id}/file")
 def get_document_file(document_id: str, user: User = Depends(current_user), db: Session = Depends(get_db)):
     document = _get_scoped(db, document_id, user)
-    path = resolve_path(document)
+    try:
+        path = resolve_path(document)
+    except StorageError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "File is missing from storage")
     if not path.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "File is missing on disk")
     return FileResponse(path, media_type=document.content_type or None, filename=document.original_filename)
@@ -196,11 +200,11 @@ def discard(document_id: str, user: User = Depends(current_user), db: Session = 
     document = _get_scoped(db, document_id, user)
     if document.status not in INBOX_STATUSES:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Confirmed documents belong to a visit and can't be discarded here")
-    for doc in [*child_pages(db, document), document]:
-        path = resolve_path(doc)
-        if path.exists() and "uploads" in path.parts:
-            path.unlink()
+    docs = [*child_pages(db, document), document]
+    for doc in docs:
         db.delete(doc)
         db.flush()  # children before parent — the self-referencing FK has no ORM relationship to order deletes
     audit(db, user, "document.discarded", "document", document.id, document.original_filename)
     db.commit()
+    for doc in docs:  # files go only once the rows are gone, so a failed commit loses nothing
+        remove_file(doc)

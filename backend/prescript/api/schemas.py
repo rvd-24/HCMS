@@ -96,6 +96,21 @@ class AppointmentIn(BaseModel):
     notify: bool = True
     allow_overlap: bool = False
     origin_visit_id: Optional[str] = None
+    # File it as a request for the doctor to approve instead of booking the slot outright.
+    request: bool = False
+
+
+class AppointmentApproveIn(BaseModel):
+    """Approve a request; start_at moves it to another slot (e.g. dropped on the day grid)."""
+    start_at: Optional[datetime.datetime] = None
+    duration_minutes: Optional[int] = Field(default=None, ge=5, le=480)
+    notify: bool = True
+    allow_overlap: bool = False
+
+
+class AppointmentDeclineIn(BaseModel):
+    reason: Optional[str] = None
+    notify: bool = True
 
 
 class AppointmentPatch(BaseModel):
