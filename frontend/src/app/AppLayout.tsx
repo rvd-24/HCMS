@@ -1,19 +1,17 @@
 import clsx from "clsx";
 import { format } from "date-fns";
-import { Bell, CalendarDays, CalendarPlus, ChevronDown, ChevronLeft, FileUp, KeyRound, LogOut, Menu, Plus, Search, Sparkles, UserPlus } from "lucide-react";
+import { Bell, CalendarDays, ChevronDown, ChevronLeft, KeyRound, LogOut, Menu, Search, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/brand";
 import { Avatar, Button } from "@/components/ui/primitives";
 import { EcgLine } from "@/components/viz";
 import { ChangePasswordModal } from "@/features/account/ChangePasswordModal";
-import { PatientFormModal } from "@/features/patients/PatientFormModal";
 import { useAuth } from "@/lib/auth";
 import { DOCTOR_STATUS } from "@/lib/format";
 import { useDoctorDashboard, useInbox, useSetMyStatus } from "@/lib/queries";
 import type { DoctorStatus } from "@/lib/types";
 import { NAV, ROLE_LABEL, navLabel } from "./navigation";
-import { useQuickActions } from "./QuickActions";
 
 const STATUS_DOT: Record<DoctorStatus, string> = { available: "bg-emerald-500", in_session: "bg-amber-500", off: "bg-coral-500" };
 
@@ -165,7 +163,7 @@ function Menu_({ trigger, children }: { trigger: ReactNode; children: (close: ()
   );
 }
 
-function MenuItem({ icon: Icon, children, onClick }: { icon: typeof Plus; children: ReactNode; onClick: () => void }) {
+function MenuItem({ icon: Icon, children, onClick }: { icon: typeof KeyRound; children: ReactNode; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -219,13 +217,11 @@ function DoctorStatusSwitch() {
 }
 
 function Topbar({ onMenu }: { onMenu: () => void }) {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const pending = usePendingReview();
-  const { openBooking, openUpload } = useQuickActions();
   const [search, setSearch] = useState("");
   const [pwOpen, setPwOpen] = useState(false);
-  const [patientOpen, setPatientOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -281,30 +277,6 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
         </span>
         <Menu_
           trigger={
-            <button className="flex h-12 items-center gap-2 rounded-full bg-gradient-to-b from-brand-400 to-brand-500 px-4 text-sm font-semibold text-white shadow-glow-sm transition-all hover:-translate-y-px hover:shadow-glow sm:px-5">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create new</span>
-            </button>
-          }
-        >
-          {(close) => (
-            <>
-              <MenuItem icon={CalendarPlus} onClick={() => (close(), openBooking())}>
-                Book appointment
-              </MenuItem>
-              <MenuItem icon={FileUp} onClick={() => (close(), openUpload())}>
-                Upload prescription
-              </MenuItem>
-              {isAdmin && (
-                <MenuItem icon={UserPlus} onClick={() => (close(), setPatientOpen(true))}>
-                  Add patient
-                </MenuItem>
-              )}
-            </>
-          )}
-        </Menu_>
-        <Menu_
-          trigger={
             <button className="flex items-center rounded-full ring-4 ring-white/80 transition-transform hover:scale-105" aria-label="Account">
               <Avatar name={user.full_name} size="lg" className="!ring-0" />
             </button>
@@ -327,7 +299,6 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
         </Menu_>
       </div>
       {pwOpen && <ChangePasswordModal onClose={() => setPwOpen(false)} />}
-      {patientOpen && <PatientFormModal onClose={() => setPatientOpen(false)} onSaved={(p) => navigate(`/patients/${p.id}`)} />}
     </header>
   );
 }

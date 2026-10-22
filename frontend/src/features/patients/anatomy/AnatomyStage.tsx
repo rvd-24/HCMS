@@ -1,13 +1,11 @@
-// Healtho-style stage: 3D model in the middle, view controls on the left, one glass callout,
-// view pills along the bottom.
+// Healtho-style stage: 3D bite model in the middle, view controls on the left, one glass callout.
 import clsx from "clsx";
-import { ChevronLeft, ChevronRight, Move, ZoomIn, ZoomOut } from "lucide-react";
+import { Move, ZoomIn, ZoomOut } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { doctorName, fmtDate } from "@/lib/format";
 import { TOOTH_STATUS, toothChart, toothName, toothRecords, type ToothStatus } from "@/lib/teeth";
 import type { Visit } from "@/lib/types";
 import type { AnatomyCanvasHandle } from "./AnatomyCanvas";
-import type { AnatomyView } from "./scene";
 
 const AnatomyCanvas = lazy(() => import("./AnatomyCanvas"));
 
@@ -34,30 +32,6 @@ function ToothIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-function ArchIcon({ flip, className }: { flip?: boolean; className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className={clsx(className, flip && "rotate-180")}>
-      <path d="M4 19c0-8 3.6-13 8-13s8 5 8 13" />
-      <path d="M7.5 18.5c0-5.6 2-9 4.5-9s4.5 3.4 4.5 9" strokeDasharray="1.6 2.6" />
-    </svg>
-  );
-}
-
-function BiteIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect x="3" y="4" width="18" height="16" rx="5" />
-      <path d="M6 12h12M9 8.5V12M12 8.5V12M15 8.5V12M9 12v3.5M12 12v3.5M15 12v3.5" />
-    </svg>
-  );
-}
-
-const VIEWS: { value: AnatomyView; label: string; icon: (p: { className?: string }) => ReactNode }[] = [
-  { value: "bite", label: "Bite", icon: (p) => <BiteIcon {...p} /> },
-  { value: "arches", label: "Teeth", icon: (p) => <ToothIcon {...p} /> },
-  { value: "upper", label: "Upper arch", icon: (p) => <ArchIcon {...p} /> },
-  { value: "lower", label: "Lower arch", icon: (p) => <ArchIcon flip {...p} /> },
-];
 
 export function AnatomyStage({
   visits,
@@ -78,7 +52,6 @@ export function AnatomyStage({
   const present = LEGEND.filter((st) => [...chart.values()].some((e) => e.status === st));
   const anyPlanned = [...chart.values()].some((e) => e.planned);
   const latest = marked[0] ?? null; // records are built newest visit first
-  const [view, setView] = useState<AnatomyView>("bite");
   const [selected, setSelected] = useState<number | null>(latest);
   const [hover, setHover] = useState<{ fdi: number; x: number; y: number } | null>(null);
   const canvas = useRef<AnatomyCanvasHandle>(null);
@@ -86,8 +59,6 @@ export function AnatomyStage({
   useEffect(() => setSelected(latest), [latest]);
   useEffect(() => onSelectedChange?.(selected), [selected, onSelectedChange]);
 
-  const idx = VIEWS.findIndex((v) => v.value === view);
-  const step = (d: number) => setView(VIEWS[(idx + d + VIEWS.length) % VIEWS.length].value);
   const rec = selected !== null ? records.get(selected) : undefined;
   const hoverRec = hover ? records.get(hover.fdi) : undefined;
   const entry = selected !== null ? chart.get(selected) : undefined;
@@ -220,7 +191,7 @@ export function AnatomyStage({
           >
             <AnatomyCanvas
               ref={canvas}
-              view={view}
+              view="bite"
               statuses={statuses}
               selected={selected}
               insetRight={floating ? 236 : 0}
@@ -272,39 +243,6 @@ export function AnatomyStage({
       </div>
 
       {!floating && <div className="callout-bar relative z-10 mt-4 rounded-3xl bg-canvas/80 px-5 py-4 ring-1 ring-ink/5">{callout}</div>}
-
-      {/* view pills */}
-      <div className="relative z-10 mt-4 flex items-center justify-center gap-2">
-        <button
-          onClick={() => step(-1)}
-          aria-label="Previous view"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-white"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <div className="no-scrollbar flex min-w-0 gap-2 overflow-x-auto px-1 py-1">
-          {VIEWS.map((v) => (
-            <button
-              key={v.value}
-              onClick={() => setView(v.value)}
-              className={clsx(
-                "flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-300",
-                view === v.value ? "bg-brand-500 text-white shadow-glow" : "bg-white text-ink-soft shadow-card hover:-translate-y-0.5 hover:text-ink",
-              )}
-            >
-              {v.icon({ className: "h-[18px] w-[18px]" })}
-              {v.label}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => step(1)}
-          aria-label="Next view"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-white"
-        >
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      </div>
     </div>
   );
 }

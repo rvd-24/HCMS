@@ -1,6 +1,6 @@
 import { addDays, addWeeks, format, isSameDay, isToday, parseISO, startOfWeek } from "date-fns";
 import clsx from "clsx";
-import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, MousePointerClick, Search } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, MousePointerClick, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuickActions } from "@/app/QuickActions";
@@ -170,11 +170,6 @@ export function AppointmentsPage() {
         eyebrow={format(new Date(), "EEEE, d MMMM")}
         title={isAdmin ? "Appointments" : "My schedule"}
         subtitle={`${appointments.filter(onCalendar).length} appointments ${view === "day" ? "on this day" : "this week"}${requests.length ? ` · ${requests.length} requests waiting` : ""}`}
-        actions={
-          <Button icon={CalendarPlus} onClick={() => openBooking({ doctorId: doctorId || undefined })}>
-            Add appointment
-          </Button>
-        }
       />
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
