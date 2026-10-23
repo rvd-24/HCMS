@@ -7,27 +7,28 @@ import {
   CheckCircle2,
   FileDown,
   FileScan,
+  FolderLock,
   Hash,
   History,
+  Inbox,
   Lock,
   Mail,
   MessageCircle,
-  MousePointerClick,
+  Move,
   Pill,
   Play,
   ScanLine,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Stethoscope,
   UploadCloud,
   Users,
-  Video,
   Wand2,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { BodyFigure } from "@/components/BodyFigure";
 import { Logo, LogoMark } from "@/components/brand";
 import { CountUp, Reveal, useInView } from "@/components/ui/motion";
 import { Avatar, Button, Segmented } from "@/components/ui/primitives";
@@ -205,8 +206,11 @@ function Hero() {
 
 const MARQUEE: [LucideIcon, string][] = [
   [ScanLine, "Handwriting extraction"],
+  [Stethoscope, "FDI tooth charting"],
+  [FileScan, "X-rays & OPGs by tooth"],
+  [Inbox, "Appointment requests"],
   [CalendarCheck2, "Google Calendar invites"],
-  [MessageCircle, "WhatsApp reminders"],
+  [MessageCircle, "WhatsApp & SMS reminders"],
   [FileDown, "Treatment-history PDF"],
   [Pill, "Pharmacy requests"],
   [ShieldCheck, "Role-based access"],
@@ -236,8 +240,8 @@ function Marquee() {
 
 const STATS: [number, string, string][] = [
   [3, "steps", "from photo to a booked follow-up"],
-  [5, "channels", "email, WhatsApp, Slack, Teams, Outlook"],
-  [2, "workspaces", "hospital admin and doctor"],
+  [6, "channels", "Gmail, Outlook, WhatsApp, SMS, Slack, Teams"],
+  [32, "teeth", "charted with their own X-rays and treatment"],
   [1, "history", "per patient, across every doctor"],
 ];
 
@@ -274,7 +278,7 @@ function StepIllustration({ step }: { step: number }) {
   if (step === 1)
     return (
       <div className="relative h-40 space-y-2 overflow-hidden rounded-2xl bg-gradient-to-br from-lime-200/60 to-white p-4">
-        {["Ananya Rao", "Acute pharyngitis", "Amoxicillin 500 mg"].map((t, i) => (
+        {["Ananya Mishra", "Irreversible pulpitis with 36", "Amoxicillin 500 mg"].map((t, i) => (
           <div key={t} className="flex items-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-xs font-semibold text-ink shadow-card">
             <Wand2 className="h-3.5 w-3.5 text-brand-500" />
             <span className="overflow-hidden whitespace-nowrap">{t}</span>
@@ -313,7 +317,7 @@ function HowItWorks() {
     {
       title: "Done",
       icon: CalendarCheck2,
-      text: "It's filed in the patient's history, the follow-up is booked and invites go out with the full history attached.",
+      text: "It's filed in the patient's history, the follow-up is booked, invites go out with the full history attached and the medicines go to the pharmacy.",
     },
   ];
   return (
@@ -361,16 +365,16 @@ function HowItWorks() {
 function TimelineCard() {
   const [ref, inView] = useInView<HTMLDivElement>();
   const visits = [
-    ["12 Oct", "Dr. Mehra", "Follow-up — throat clear", ["Paracetamol 650 mg"]],
-    ["03 Oct", "Dr. Mehra", "Acute pharyngitis", ["Amoxicillin 500 mg", "Gargle"]],
-    ["14 Aug", "Dr. Iyer", "Routine dental check", ["Chlorhexidine rinse"]],
+    ["12 Oct", "Dr. Mehra", "Root canal review — 36", ["Ibuprofen 400 mg SOS"]],
+    ["03 Oct", "Dr. Mehra", "Irreversible pulpitis with 36", ["Amoxicillin 500 mg TDS", "Ibuprofen 400 mg"]],
+    ["14 Aug", "Dr. Iyer", "Chronic generalized gingivitis", ["Chlorhexidine 0.2% rinse"]],
   ] as const;
   return (
     <div ref={ref} className="relative flex h-full flex-col overflow-hidden rounded-4xl bg-white p-7 shadow-card">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-display text-3xl font-medium text-ink">One continuous history</h3>
-          <p className="mt-1 text-sm text-ink-soft">Every visit, medicine and scanned page — across every doctor.</p>
+          <p className="mt-1 text-sm text-ink-soft">Every visit, medicine, X-ray and scanned page — across every doctor.</p>
         </div>
         <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-brand-300 to-brand-600 text-white shadow-glow-sm">
           <History className="h-5 w-5" />
@@ -425,7 +429,7 @@ function TimelineCard() {
 }
 
 function ChannelsOrbit() {
-  const icons = [MessageCircle, Mail, Hash, Users, CalendarCheck2];
+  const icons = [MessageCircle, Mail, Smartphone, Hash, Users, CalendarCheck2];
   return (
     <div className="relative mx-auto h-48 w-48">
       <div className="absolute inset-0 rounded-full border border-dashed border-white/30" />
@@ -450,6 +454,72 @@ function ChannelsOrbit() {
   );
 }
 
+// Sample chart in FDI order, colours matching the patient profile's legend.
+const UPPER_TEETH = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+const LOWER_TEETH = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+const SAMPLE_CHART: Record<number, keyof typeof TOOTH_SWATCH> = { 17: "caries", 16: "filled", 26: "crown", 36: "rct", 46: "filled", 48: "missing" };
+const TOOTH_SWATCH = {
+  caries: ["Decay", "bg-orange-500"],
+  filled: ["Filled", "bg-sky-500"],
+  rct: ["Root canal", "bg-violet-500"],
+  crown: ["Crown", "bg-amber-400"],
+  missing: ["Missing", "border border-dashed border-ink/40 bg-white"],
+} as const;
+
+function ToothArch({ teeth, upper }: { teeth: number[]; upper?: boolean }) {
+  return (
+    <div className="flex items-center justify-center gap-[3px]">
+      {teeth.map((fdi, i) => {
+        const unit = fdi % 10;
+        const curve = ((i - 7.5) / 7.5) ** 2 * 18; // molars sit lower on the upper arch, higher on the lower
+        const status = SAMPLE_CHART[fdi];
+        return (
+          <span
+            key={fdi}
+            className={clsx(
+              "relative h-6 rounded-[7px] transition-transform",
+              unit >= 6 ? "w-3.5" : unit >= 4 ? "w-3" : "w-2.5",
+              status ? TOOTH_SWATCH[status][1] : "bg-white ring-1 ring-ink/10",
+              fdi === 36 && "ring-2 ring-ink ring-offset-2",
+            )}
+            style={{ transform: `translateY(${upper ? curve : -curve}px)` }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function ToothChartCard() {
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden rounded-4xl bg-white p-6 shadow-card">
+      <h3 className="font-display text-xl font-semibold text-ink">Tooth-by-tooth chart</h3>
+      <p className="mt-1 text-xs text-ink-soft">Findings from every visit land on an FDI chart. Pick a tooth to see its X-rays.</p>
+      <div className="mt-6 space-y-7 rounded-3xl bg-canvas/70 px-2 py-6">
+        <ToothArch teeth={UPPER_TEETH} upper />
+        <ToothArch teeth={LOWER_TEETH} />
+      </div>
+      <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-ink/5">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500 font-display text-sm font-bold text-white">36</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-ink">Lower left first molar</p>
+          <p className="truncate text-xs text-ink-faint">Root canal treated · 12 Oct</p>
+        </div>
+        <span className="flex items-center gap-1 rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold text-white">
+          <FileScan className="h-3 w-3" /> 2 X-rays
+        </span>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5">
+        {Object.values(TOOTH_SWATCH).map(([label, swatch]) => (
+          <span key={label} className="flex items-center gap-1.5 text-[11px] text-ink-soft">
+            <span className={clsx("h-2.5 w-2.5 rounded-full", swatch)} /> {label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const PASTEL = [
   "from-violet-100 to-fuchsia-50 text-violet-800",
   "from-emerald-100 to-lime-50 text-emerald-800",
@@ -459,12 +529,13 @@ const PASTEL = [
 ];
 
 function MiniSchedule() {
+  // "r" is a patient's request waiting for the doctor; it holds no slot until approved.
   const grid = [
     [0, 1, null, 3, 4],
-    [3, null, 4, 0, 1],
+    [3, null, "r", 0, 1],
     [1, 2, 0, null, 3],
     [null, 4, 3, 1, null],
-  ];
+  ] as const;
   return (
     <div className="grid grid-cols-5 gap-1.5">
       {["Mon", "Tue", "Wed", "Thu", "Fri"].map((d) => (
@@ -476,15 +547,21 @@ function MiniSchedule() {
         row.map((c, i) =>
           c === null ? (
             <span key={`${r}${i}`} className="h-12 rounded-xl border border-dashed border-ink/10" />
+          ) : c === "r" ? (
+            <span
+              key={`${r}${i}`}
+              className="flex h-12 animate-float flex-col justify-between rounded-xl bg-gradient-to-br from-white to-sky-50 p-1.5 text-[9px] font-semibold text-sky-900 shadow-float border border-dashed border-sky-300"
+            >
+              <span className="truncate">Request</span>
+              <Move className="h-2.5 w-2.5 opacity-70" />
+            </span>
           ) : (
             <span
               key={`${r}${i}`}
               className={clsx("flex h-12 flex-col justify-between rounded-xl bg-gradient-to-br p-1.5 text-[9px] font-semibold", PASTEL[c])}
             >
               <span className="truncate">Patient</span>
-              <span className="flex items-center gap-0.5 opacity-70">
-                {c % 2 ? <Video className="h-2.5 w-2.5" /> : <Stethoscope className="h-2.5 w-2.5" />}
-              </span>
+              <Stethoscope className="h-2.5 w-2.5 opacity-70" />
             </span>
           ),
         ),
@@ -551,7 +628,7 @@ function Bento() {
             </div>
             <div className="relative overflow-hidden rounded-4xl bg-gradient-to-br from-brand-800 via-brand-700 to-brand-500 p-6 text-white shadow-card">
               <h3 className="font-display text-xl font-semibold">Everyone informed</h3>
-              <p className="mt-1 text-xs text-white/75">Every configured channel, automatically.</p>
+              <p className="mt-1 text-xs text-white/75">Patient, doctor and pharmacy — on every configured channel.</p>
               <div className="mt-4">
                 <ChannelsOrbit />
               </div>
@@ -559,23 +636,21 @@ function Bento() {
           </div>
         </Reveal>
 
-        <Reveal delay={100} className="md:col-span-2">
-          <div className="relative h-full overflow-hidden rounded-4xl bg-white p-6 shadow-card">
-            <h3 className="font-display text-xl font-semibold text-ink">Patient insights</h3>
-            <p className="mt-1 text-xs text-ink-soft">A profile that feels like a chart, not a spreadsheet.</p>
-            <BodyFigure className="mx-auto mt-2 h-64" />
-          </div>
+        <Reveal delay={100} className="md:col-span-3 lg:col-span-2">
+          <ToothChartCard />
         </Reveal>
 
-        <Reveal delay={180} className="md:col-span-4">
+        <Reveal delay={180} className="md:col-span-3 lg:col-span-4">
           <div className="relative h-full overflow-hidden rounded-4xl bg-white p-6 shadow-card">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="font-display text-xl font-semibold text-ink">A schedule you can read at a glance</h3>
-                <p className="mt-1 text-xs text-ink-soft">Week, day-by-doctor and list views. Click any empty slot to book it.</p>
+                <p className="mt-1 text-xs text-ink-soft">
+                  Week, day-by-doctor and list views with OPD hours marked. Click an empty slot to book it, drag a booking to reschedule.
+                </p>
               </div>
               <span className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-white">
-                <MousePointerClick className="h-3.5 w-3.5" /> Click to book
+                <Move className="h-3.5 w-3.5" /> Drag a request to approve
               </span>
             </div>
             <div className="mt-5">
@@ -607,9 +682,9 @@ function AdminPreview() {
         ))}
       </div>
       {[
-        ["Dr. Sarah Mehra", "Cardiology", "Available", "bg-emerald-50 text-emerald-700"],
-        ["Dr. Vikram Iyer", "Dentistry", "In session", "bg-amber-50 text-amber-700"],
-        ["Dr. Lena Park", "Dermatology", "Off", "bg-coral-50 text-coral-600"],
+        ["Dr. Sarah Mehra", "Endodontics", "Available", "bg-emerald-50 text-emerald-700"],
+        ["Dr. Vikram Iyer", "Periodontics", "In session", "bg-amber-50 text-amber-700"],
+        ["Dr. Lena Park", "Oral & Maxillofacial Surgery", "Off", "bg-coral-50 text-coral-600"],
       ].map(([n, s, st, c]) => (
         <div key={n} className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-ink/5">
           <Avatar name={n} size="sm" />
@@ -631,12 +706,12 @@ function DoctorPreview() {
         <EcgLine className="pointer-events-none absolute inset-x-0 bottom-0 h-14 w-full text-white/25" beats={4} ghost={false} />
         <p className="text-xs uppercase tracking-wider text-white/70">Next patient</p>
         <p className="num text-5xl font-light">10:30</p>
-        <p className="font-semibold">Ananya Rao · follow-up</p>
-        <p className="mt-2 text-xs text-white/75">Last visit: acute pharyngitis · Amoxicillin 500 mg</p>
+        <p className="font-semibold">Ananya Mishra · root canal review</p>
+        <p className="mt-2 text-xs text-white/75">Last visit: irreversible pulpitis with 36 · Amoxicillin 500 mg</p>
       </div>
       {[
-        ["11:00", "Rahul Verma", "Checked in", "bg-amber-50 text-amber-700"],
-        ["11:30", "Fatima Khan", "Confirmed", "bg-emerald-50 text-emerald-700"],
+        ["11:00", "Rahul Tripathy", "Checked in", "bg-amber-50 text-amber-700"],
+        ["11:30", "Sneha Rath", "Confirmed", "bg-emerald-50 text-emerald-700"],
       ].map(([t, n, st, c]) => (
         <div key={n} className="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-ink/5">
           <span className="w-12 text-sm font-bold text-ink">{t}</span>
@@ -645,6 +720,16 @@ function DoctorPreview() {
           <span className={clsx("rounded-full px-2.5 py-1 text-[11px] font-semibold", c)}>{st}</span>
         </div>
       ))}
+      <div className="flex items-center gap-3 rounded-2xl border border-dashed border-sky-300 bg-sky-50/60 p-3">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500 text-white">
+          <Inbox className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-ink">2 requests waiting</p>
+          <p className="truncate text-xs text-ink-faint">Wisdom tooth pain · Broken filling</p>
+        </div>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-sky-700 ring-1 ring-sky-200">Review</span>
+      </div>
     </div>
   );
 }
@@ -656,8 +741,9 @@ function Workspaces() {
       icon: Building2,
       title: "For the hospital admin",
       points: [
-        "Live dashboard of every doctor and every booking",
+        "Live dashboard of every doctor, their availability and every booking",
         "AI prescription inbox with one-click review",
+        "Book directly, or file a request for the doctor to approve",
         "Doctors, logins, notification channels and an audit log",
       ],
     },
@@ -665,9 +751,10 @@ function Workspaces() {
       icon: Stethoscope,
       title: "For the doctor",
       points: [
-        "Your day as a queue — check in, start, complete",
-        "Walk in prepared: last visit and medicines up front",
-        "Your patients' full history, downloadable as a PDF",
+        "Your day on the schedule — check in, start consultation, complete",
+        "Approve or decline requests, or drag one straight onto a free slot",
+        "Each patient's full history, tooth chart and X-rays — downloadable as a PDF",
+        "Set yourself Available, In session or Off",
       ],
     },
   }[role];
@@ -730,7 +817,7 @@ function Safety() {
     [Lock, "Safe by default", "Email and calendar invites stay off until you switch them on — and can be redirected to one test inbox."],
     [ShieldCheck, "Role-based access", "Doctors see their own schedule and patients. Admins see the whole clinic."],
     [History, "Every action logged", "Bookings, status changes, uploads and edits — who did it and when."],
-    [FileScan, "Source kept on file", "The original scan stays attached to the visit it created, page by page."],
+    [FolderLock, "Files stay private", "Case sheets and X-rays sit in a private storage bucket, served only after an access check — each attached to the visit it belongs to."],
   ];
   return (
     <section id="safety" className="mx-auto max-w-6xl scroll-mt-24 px-5 py-20">
@@ -780,7 +867,7 @@ function FinalCta() {
       </Reveal>
       <footer className="mt-10 flex flex-col items-center justify-between gap-4 px-2 text-sm text-ink-faint sm:flex-row">
         <Logo />
-        <p>Prescription intake, patient history and scheduling for clinics.</p>
+        <p>Prescription intake, dental charting, patient history and scheduling for clinics.</p>
       </footer>
     </section>
   );

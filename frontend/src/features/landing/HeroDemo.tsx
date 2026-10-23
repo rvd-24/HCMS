@@ -1,5 +1,5 @@
 // Looping illustration of the core flow: scan → extract → book → notify. Sample data only.
-import { Check, Hash, Mail, MessageCircle, ScanLine, Sparkles } from "lucide-react";
+import { Check, Hash, Mail, MessageCircle, Pill, ScanLine, Sparkles } from "lucide-react";
 import { useEffect, useState, type CSSProperties } from "react";
 import { EcgLine } from "@/components/viz";
 
@@ -27,7 +27,7 @@ function CaseSheet() {
     <div className="absolute left-0 top-10 w-[230px] -rotate-6 animate-float-slow sm:w-[250px]">
       <div className="relative overflow-hidden rounded-3xl bg-[#fffdf7] p-4 shadow-float ring-1 ring-black/5">
         <div className="flex items-center justify-between border-b border-dashed border-ink/15 pb-2">
-          <span className="font-display text-xs font-bold tracking-wide text-[#2f3d6b]">CITY CARE CLINIC</span>
+          <span className="font-display text-xs font-bold tracking-wide text-[#2f3d6b]">SMILE CARE DENTAL</span>
           <span className="h-6 w-6 rounded-full border-2 border-coral-400/60" />
         </div>
         <svg viewBox="0 0 220 250" className="mt-2 w-full">
@@ -57,9 +57,9 @@ function CaseSheet() {
 }
 
 const FIELDS = [
-  ["Patient", "Ananya Rao · PT-2041"],
-  ["Diagnosis", "Acute pharyngitis"],
-  ["Medicines", "Amoxicillin 500 mg · Paracetamol 650 mg"],
+  ["Patient", "Ananya Mishra · PT-2041"],
+  ["Diagnosis", "Irreversible pulpitis with 36"],
+  ["Medicines", "Amoxicillin 500 mg TDS · Ibuprofen 400 mg SOS"],
   ["Next visit", "Thu, 24 Oct · 10:30 AM"],
 ];
 
@@ -95,7 +95,7 @@ function ExtractionCard({ cycle }: { cycle: number }) {
 
 function BookedCard({ cycle }: { cycle: number }) {
   return (
-    <div key={cycle} className="absolute bottom-36 right-0 w-[270px] animate-scale-in sm:bottom-16 sm:w-[300px]" style={delay(2.6)}>
+    <div key={cycle} className="absolute bottom-44 right-0 w-[270px] animate-scale-in sm:bottom-16 sm:w-[300px]" style={delay(2.6)}>
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-700 via-brand-600 to-brand-400 p-5 text-white shadow-glow">
         <EcgLine className="pointer-events-none absolute inset-x-0 bottom-1 h-12 w-full text-white/30" beats={3} ghost={false} />
         <div className="relative flex items-center gap-4">
@@ -106,7 +106,7 @@ function BookedCard({ cycle }: { cycle: number }) {
           <div className="min-w-0 flex-1">
             <p className="text-xs text-white/75">Follow-up booked</p>
             <p className="font-display text-lg font-semibold leading-tight">10:30 AM</p>
-            <p className="truncate text-xs text-white/80">Dr. Mehra · Room 3</p>
+            <p className="truncate text-xs text-white/80">Dr. Mehra · Root canal review</p>
           </div>
           <span className="flex h-9 w-9 animate-scale-in items-center justify-center rounded-full bg-lime-300 text-brand-900" style={delay(3.1)}>
             <Check className="h-5 w-5" strokeWidth={3} />
@@ -120,6 +120,7 @@ function BookedCard({ cycle }: { cycle: number }) {
 const CHANNELS = [
   { icon: MessageCircle, label: "WhatsApp sent", tone: "bg-emerald-500" },
   { icon: Mail, label: "Invite + history PDF", tone: "bg-coral-500" },
+  { icon: Pill, label: "Medicines sent to pharmacy", tone: "bg-sky-500" },
   { icon: Hash, label: "Doctor pinged on Slack", tone: "bg-violet-500" },
 ];
 

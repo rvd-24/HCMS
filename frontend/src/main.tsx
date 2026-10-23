@@ -7,7 +7,10 @@ import { Toaster } from "sonner";
 import { App } from "./app/App";
 import { ApiError } from "./lib/api";
 import { AuthProvider } from "./lib/auth";
+import { keepBackendAwake } from "./lib/keepAlive";
 import "./index.css";
+
+keepBackendAwake();
 
 const queryClient = new QueryClient({
   defaultOptions: {
